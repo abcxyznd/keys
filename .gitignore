@@ -38,9 +38,7 @@ wheels/
 
 # Data & Keys - Now tracked for GitHub API management
 
-# Database
-*.db
-orders.db
+
 
 # Logs
 *.log
