@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import threading
+from threading import Lock
 
 # Import bot-related functions from bot.py
 from bot import bot, send_telegram, load_coupons, save_coupons, get_coupon, is_coupon_valid, use_coupon, start_bot
@@ -27,6 +28,17 @@ MB_API_URL = "https://thueapibank.vn/historyapimbbankv2/07bf677194ae4972714f01a3
 
 # Tạo folder data/keys nếu chưa tồn tại
 os.makedirs("data/keys", exist_ok=True)
+
+# Lock for file operations to prevent race conditions
+file_locks = {}
+lock_manager = Lock()
+
+def get_file_lock(file_path):
+    """Lấy lock cho một file (thread-safe)"""
+    with lock_manager:
+        if file_path not in file_locks:
+            file_locks[file_path] = Lock()
+        return file_locks[file_path]
 
 # =================== DB ===================
 def create_db():
@@ -130,90 +142,109 @@ def count_keys(period_code):
     """Count remaining keys for a given period code"""
     file_path = get_key_file_path(period_code)
     
-    if not os.path.exists(file_path):
-        return 0
+    # Dùng lock để đảm bảo đọc file đúng
+    file_lock = get_file_lock(file_path)
     
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = [line.strip() for line in f.readlines() if line.strip()]
-        return len(lines)
-    except Exception as e:
-        print(f"[KEY ERROR] Failed to count keys in {file_path}: {e}")
-        return 0
+    with file_lock:
+        if not os.path.exists(file_path):
+            return 0
+        
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                lines = [line.strip() for line in f.readlines() if line.strip()]
+            return len(lines)
+        except Exception as e:
+            print(f"[KEY ERROR] Failed to count keys in {file_path}: {e}")
+            return 0
 
 def get_key_from_file(period_code):
     # Handle v1 and v2 variants
     file_path = get_key_file_path(period_code)
     
-    print(f"[KEY DEBUG] Checking file: {file_path}")
-    if not os.path.exists(file_path):
-        print(f"[KEY ERROR] File not found: {file_path}")
-        return None
+    # Dùng lock để tránh đọc file khi file đang được ghi
+    file_lock = get_file_lock(file_path)
     
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        
-        print(f"[KEY DEBUG] Lines in file: {len(lines)}")
-        if not lines:
-            print("[KEY ERROR] No lines in file")
+    with file_lock:
+        print(f"[KEY DEBUG] Checking file: {file_path}")
+        if not os.path.exists(file_path):
+            print(f"[KEY ERROR] File not found: {file_path}")
             return None
         
-        key = lines[0].strip()
-        print(f"[KEY DEBUG] Key to send: {key}")
-        return key
-    except Exception as e:
-        print(f"[KEY ERROR] Exception: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            
+            print(f"[KEY DEBUG] Lines in file: {len(lines)}")
+            if not lines:
+                print("[KEY ERROR] No lines in file")
+                return None
+            
+            key = lines[0].strip()
+            print(f"[KEY DEBUG] Key to send: {key}")
+            return key
+        except Exception as e:
+            print(f"[KEY ERROR] Exception: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
 
 def delete_key_from_file(period_code):
     """Xóa key đầu tiên từ file và lưu vào key_solved.txt"""
     file_path = get_key_file_path(period_code)
     solved_file = get_solved_file_path()
     
-    try:
-        print(f"[DELETE_KEY] Path: {file_path}, exists: {os.path.exists(file_path)}")
-        
-        if not os.path.exists(file_path):
-            print(f"[DELETE_KEY] ❌ File not found: {file_path}")
-            return False
+    # Dùng lock để tránh race condition
+    file_lock = get_file_lock(file_path)
+    
+    with file_lock:
+        try:
+            print(f"[DELETE_KEY] Path: {file_path}, exists: {os.path.exists(file_path)}")
             
-        # Đọc file
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        
-        if not lines:
-            print(f"[DELETE_KEY] ❌ File empty: {file_path}")
+            if not os.path.exists(file_path):
+                print(f"[DELETE_KEY] ❌ File not found: {file_path}")
+                return False
+            
+            # Bước 1: Đọc file và lấy key đầu tiên
+            with open(file_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            
+            if not lines or not lines[0].strip():
+                print(f"[DELETE_KEY] ❌ File empty or no valid key: {file_path}")
+                return False
+            
+            key = lines[0].strip()
+            print(f"[DELETE_KEY] Found key: {key}")
+            
+            # Bước 2: Xóa key từ file gốc TRƯỚC (nếu xảy ra lỗi, file gốc vẫn an toàn)
+            remaining_lines = lines[1:]
+            try:
+                with open(file_path, "w", encoding="utf-8") as f:
+                    for line in remaining_lines:
+                        f.write(line)
+                print(f"[DELETE_KEY] ✅ Removed from {file_path}, lines left: {len(remaining_lines)}")
+            except Exception as e:
+                print(f"[DELETE_KEY] ❌ Failed to write to {file_path}: {e}")
+                return False
+            
+            # Bước 3: Lưu key vào key_solved.txt sau khi file gốc đã update thành công
+            solved_dir = os.path.dirname(solved_file)
+            os.makedirs(solved_dir, exist_ok=True)
+            
+            try:
+                with open(solved_file, "a", encoding="utf-8") as f:
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    f.write(f"{key} | {timestamp}\n")
+                print(f"[DELETE_KEY] ✅ Added to {solved_file}")
+            except Exception as e:
+                print(f"[DELETE_KEY] ⚠️  Warning: Key removed from source but failed to save to solved file: {e}")
+                # Không trả lỗi ở đây vì key đã được xóa từ file gốc
+            
+            return True
+        except Exception as e:
+            print(f"[DELETE_KEY] ❌ Exception: {e}")
+            import traceback
+            traceback.print_exc()
             return False
-        
-        key = lines[0].strip()
-        print(f"[DELETE_KEY] Found key: {key}")
-        
-        # Tạo thư mục nếu chưa tồn tại
-        solved_dir = os.path.dirname(solved_file)
-        os.makedirs(solved_dir, exist_ok=True)
-        
-        # Lưu key vào key_solved.txt
-        with open(solved_file, "a", encoding="utf-8") as f:
-            f.write(key + "\n")
-            f.flush()  # Đảm bảo ghi xong
-        print(f"[DELETE_KEY] ✅ Added to {solved_file}")
-        
-        # Xóa dòng đầu từ file gốc - WRITE NGAY (không close rồi mới write)
-        remaining_lines = lines[1:]
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.writelines(remaining_lines)
-            f.flush()  # Đảm bảo ghi xong trước khi close
-        print(f"[DELETE_KEY] ✅ Removed from {file_path}, lines left: {len(remaining_lines)}")
-        
-        return True
-    except Exception as e:
-        print(f"[DELETE_KEY] ❌ Exception: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
 
 def generate_key(period):
     period_map_reverse = {"1 day": "1d", "7 day": "7d", "30 day": "30d", "90d": "90d"}
