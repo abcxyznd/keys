@@ -189,7 +189,7 @@ def get_key_from_file(period_code):
             return None
 
 def delete_key_from_file(period_code):
-    """Xóa key đầu tiên từ file và lưu vào key_solved.txt"""
+    """Xóa key đầu tiên từ TẤT CẢ file key và lưu vào key_solved.txt"""
     file_path = get_key_file_path(period_code)
     solved_file = get_solved_file_path()
     
@@ -198,7 +198,7 @@ def delete_key_from_file(period_code):
     
     with file_lock:
         try:
-            print(f"[DELETE_KEY] Path: {file_path}, exists: {os.path.exists(file_path)}")
+            print(f"[DELETE_KEY] Looking for key in: {file_path}")
             
             if not os.path.exists(file_path):
                 print(f"[DELETE_KEY] ❌ File not found: {file_path}")
@@ -215,18 +215,34 @@ def delete_key_from_file(period_code):
             key = lines[0].strip()
             print(f"[DELETE_KEY] Found key: {key}")
             
-            # Bước 2: Xóa key từ file gốc TRƯỚC (nếu xảy ra lỗi, file gốc vẫn an toàn)
-            remaining_lines = lines[1:]
-            try:
-                with open(file_path, "w", encoding="utf-8") as f:
-                    for line in remaining_lines:
-                        f.write(line)
-                print(f"[DELETE_KEY] ✅ Removed from {file_path}, lines left: {len(remaining_lines)}")
-            except Exception as e:
-                print(f"[DELETE_KEY] ❌ Failed to write to {file_path}: {e}")
-                return False
+            # Bước 2: Xóa key từ TẤT CẢ các file trong data/keys
+            keys_dir = os.path.join("data", "keys")
+            key_files = ["key1d.txt", "key7d.txt", "key30d.txt", "key90d.txt"]
             
-            # Bước 3: Lưu key vào key_solved.txt sau khi file gốc đã update thành công
+            for key_file in key_files:
+                full_path = os.path.join(keys_dir, key_file)
+                if not os.path.exists(full_path):
+                    print(f"[DELETE_KEY] ℹ️  File not found: {full_path}")
+                    continue
+                
+                try:
+                    with open(full_path, "r", encoding="utf-8") as f:
+                        file_lines = f.readlines()
+                    
+                    # Lọc ra các dòng không chứa key này
+                    new_lines = [line for line in file_lines if line.strip() != key]
+                    
+                    with open(full_path, "w", encoding="utf-8") as f:
+                        f.writelines(new_lines)
+                    
+                    removed_count = len(file_lines) - len(new_lines)
+                    if removed_count > 0:
+                        print(f"[DELETE_KEY] ✅ Removed {removed_count} occurrence(s) from {full_path}, lines left: {len(new_lines)}")
+                    
+                except Exception as e:
+                    print(f"[DELETE_KEY] ⚠️  Failed to process {full_path}: {e}")
+            
+            # Bước 3: Lưu key vào key_solved.txt sau khi xóa từ tất cả file
             solved_dir = os.path.dirname(solved_file)
             os.makedirs(solved_dir, exist_ok=True)
             
@@ -237,7 +253,6 @@ def delete_key_from_file(period_code):
                 print(f"[DELETE_KEY] ✅ Added to {solved_file}")
             except Exception as e:
                 print(f"[DELETE_KEY] ⚠️  Warning: Key removed from source but failed to save to solved file: {e}")
-                # Không trả lỗi ở đây vì key đã được xóa từ file gốc
             
             return True
         except Exception as e:
