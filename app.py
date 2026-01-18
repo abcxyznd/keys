@@ -255,6 +255,9 @@ def delete_key_from_file(key_to_delete):
         print(f"[DELETE_KEY] ❌ No key provided")
         return False
     
+    key_to_delete = key_to_delete.strip()  # Ensure stripped
+    print(f"[DELETE_KEY] ✅ START: Processing key: [{key_to_delete}]")
+    
     # Try GitHub API first (if available)
     github_mgr = get_github_manager()
     if github_mgr.use_github:
@@ -273,59 +276,54 @@ def delete_key_from_file(key_to_delete):
     keys_dir = os.path.join("data", "keys")
     key_files = ["key1d.txt", "key7d.txt", "key30d.txt", "key90d.txt"]
     
+    removed_from = []
+    key_found = False
+    
     try:
-        print(f"[DELETE_KEY] ✅ START: Deleting key: {key_to_delete} from all files...")
-        
-        # Xóa key này từ TẤT CẢ các file
-        removed_from = []
-        
+        # Step 1: Xóa key từ TẤT CẢ các file
         for key_file in key_files:
             full_path = os.path.join(keys_dir, key_file)
-            print(f"[DELETE_KEY] Checking {full_path}...")
             
             if not os.path.exists(full_path):
                 print(f"[DELETE_KEY] ℹ️  File not found: {full_path}")
                 continue
             
             try:
-                # Bước 1: Đọc file
+                # Đọc file
                 with open(full_path, "r", encoding="utf-8") as f:
-                    file_lines = f.readlines()
+                    lines = f.readlines()
                 
-                print(f"[DELETE_KEY] Read {len(file_lines)} lines from {full_path}")
+                print(f"[DELETE_KEY] Read {len(lines)} lines from {full_path}")
                 
-                # Đếm key cần xóa
-                original_count = len([l for l in file_lines if l.strip() == key_to_delete])
-                print(f"[DELETE_KEY] Found {original_count} occurrence(s) of key in {full_path}")
+                # Tìm key (so sánh sau strip)
+                found_indices = []
+                for i, line in enumerate(lines):
+                    if line.strip() == key_to_delete:
+                        found_indices.append(i)
                 
-                if original_count == 0:
-                    continue
-                
-                # Lọc ra các dòng không chứa key này
-                new_lines = [line for line in file_lines if line.strip() != key_to_delete]
-                print(f"[DELETE_KEY] After filtering: {len(new_lines)} lines remain")
-                
-                # Bước 2: Ghi file lại
-                with open(full_path, "w", encoding="utf-8") as f:
-                    f.writelines(new_lines)
-                    f.flush()
-                    os.fsync(f.fileno())  # Force disk sync
-                
-                print(f"[DELETE_KEY] ✅ Removed {original_count} occurrence from {key_file}, lines left: {len(new_lines)}")
-                removed_from.append(key_file)
-                
-                # Bước 3: Verify write
-                with open(full_path, "r", encoding="utf-8") as f:
-                    verify_lines = f.readlines()
-                verify_count = len([l for l in verify_lines if l.strip() == key_to_delete])
-                print(f"[DELETE_KEY] VERIFY: {verify_count} occurrence(s) still in {full_path}")
-                
+                if found_indices:
+                    print(f"[DELETE_KEY] Found at line(s): {found_indices}")
+                    key_found = True
+                    
+                    # Xóa những lines có key
+                    new_lines = [line for i, line in enumerate(lines) if i not in found_indices]
+                    
+                    # Ghi file lại
+                    with open(full_path, "w", encoding="utf-8") as f:
+                        f.writelines(new_lines)
+                        f.flush()
+                        os.fsync(f.fileno())
+                    
+                    print(f"[DELETE_KEY] ✅ Removed {len(found_indices)} occurrence(s) from {key_file}")
+                    removed_from.append(key_file)
+                else:
+                    print(f"[DELETE_KEY] ℹ️  Key not found in {full_path}")
+                    
             except Exception as e:
-                print(f"[DELETE_KEY] ❌ Failed to process {full_path}: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"[DELETE_KEY] ❌ Error processing {full_path}: {e}")
         
-        # Lưu key vào key_solved.txt
+        # Step 2: Luôn lưu key vào key_solved.txt
+        print(f"[DELETE_KEY] 💾 Saving key to {solved_file}...")
         solved_dir = os.path.dirname(solved_file)
         os.makedirs(solved_dir, exist_ok=True)
         
@@ -335,20 +333,26 @@ def delete_key_from_file(key_to_delete):
                 f.write(f"{key_to_delete} | {timestamp}\n")
                 f.flush()
                 os.fsync(f.fileno())
-            print(f"[DELETE_KEY] ✅ Added to {solved_file}")
+            print(f"[DELETE_KEY] ✅ Successfully saved to {solved_file}")
         except Exception as e:
-            print(f"[DELETE_KEY] ⚠️  Warning: Key removed from source but failed to save to solved file: {e}")
+            print(f"[DELETE_KEY] ❌ Failed to save to {solved_file}: {e}")
+            return False
         
+        # Summary
         if removed_from:
-            print(f"[DELETE_KEY] ✅ COMPLETED: Successfully removed '{key_to_delete}' from {removed_from}")
-            return True
+            print(f"[DELETE_KEY] ✅ COMPLETED: Removed from {removed_from} and saved to solved file")
+        elif key_found:
+            print(f"[DELETE_KEY] ✅ COMPLETED: Found and saved to solved file")
         else:
-            print(f"[DELETE_KEY] ⚠️  WARNING: Key '{key_to_delete}' was not found in any file")
-            return True
+            print(f"[DELETE_KEY] ⚠️  Key not found in any file but saved to solved file anyway")
+        
+        return True
         
     except Exception as e:
         print(f"[DELETE_KEY] ❌ EXCEPTION: {e}")
         import traceback
+        traceback.print_exc()
+        return False
         traceback.print_exc()
         return False
 
@@ -390,7 +394,7 @@ def send_key(email, key, uid, period="30 day"):
             html_content = html_content.replace("{{uid}}", uid)
             html_content = html_content.replace("{{key}}", key_for_email)
             html_content = html_content.replace("{{period}}", period_display)
-            html_content = html_content.replace("{{link}}", "https://tinyurl.com/2a999ad7")
+            html_content = html_content.replace("{{link}}", "https://install.muakey.cloud/?auto=1&version=v1&pwd=666CHEATV1-ABC")
             html_content = html_content.replace("\r", "")
         except Exception as e:
             print(f"[EMAIL ERROR] Template replacement error: {e}")
