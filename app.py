@@ -213,76 +213,86 @@ def get_key_from_file(period_code):
 
 def delete_key_from_file(period_code):
     """Xóa key đầu tiên từ TẤT CẢ file key và lưu vào key_solved.txt"""
-    file_path = get_key_file_path(period_code)
     solved_file = get_solved_file_path()
+    keys_dir = os.path.join("data", "keys")
+    key_files = ["key1d.txt", "key7d.txt", "key30d.txt", "key90d.txt"]
     
-    # Dùng lock để tránh race condition
-    file_lock = get_file_lock(file_path)
-    
-    with file_lock:
-        try:
-            print(f"[DELETE_KEY] Looking for key in: {file_path}")
-            
-            if not os.path.exists(file_path):
-                print(f"[DELETE_KEY] ❌ File not found: {file_path}")
-                return False
-            
-            # Bước 1: Đọc file và lấy key đầu tiên
-            with open(file_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            
-            if not lines or not lines[0].strip():
-                print(f"[DELETE_KEY] ❌ File empty or no valid key: {file_path}")
-                return False
-            
-            key = lines[0].strip()
-            print(f"[DELETE_KEY] Found key: {key}")
-            
-            # Bước 2: Xóa key từ TẤT CẢ các file trong data/keys
-            keys_dir = os.path.join("data", "keys")
-            key_files = ["key1d.txt", "key7d.txt", "key30d.txt", "key90d.txt"]
-            
-            for key_file in key_files:
-                full_path = os.path.join(keys_dir, key_file)
-                if not os.path.exists(full_path):
-                    print(f"[DELETE_KEY] ℹ️  File not found: {full_path}")
-                    continue
-                
-                try:
-                    with open(full_path, "r", encoding="utf-8") as f:
-                        file_lines = f.readlines()
-                    
-                    # Lọc ra các dòng không chứa key này
-                    new_lines = [line for line in file_lines if line.strip() != key]
-                    
-                    with open(full_path, "w", encoding="utf-8") as f:
-                        f.writelines(new_lines)
-                    
-                    removed_count = len(file_lines) - len(new_lines)
-                    if removed_count > 0:
-                        print(f"[DELETE_KEY] ✅ Removed {removed_count} occurrence(s) from {full_path}, lines left: {len(new_lines)}")
-                    
-                except Exception as e:
-                    print(f"[DELETE_KEY] ⚠️  Failed to process {full_path}: {e}")
-            
-            # Bước 3: Lưu key vào key_solved.txt sau khi xóa từ tất cả file
-            solved_dir = os.path.dirname(solved_file)
-            os.makedirs(solved_dir, exist_ok=True)
+    try:
+        # Tìm key đầu tiên từ tất cả các file
+        key_to_delete = None
+        source_file = None
+        
+        for key_file in key_files:
+            full_path = os.path.join(keys_dir, key_file)
+            if not os.path.exists(full_path):
+                print(f"[DELETE_KEY] ℹ️  File not found: {full_path}")
+                continue
             
             try:
-                with open(solved_file, "a", encoding="utf-8") as f:
-                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    f.write(f"{key} | {timestamp}\n")
-                print(f"[DELETE_KEY] ✅ Added to {solved_file}")
+                with open(full_path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                
+                if lines and lines[0].strip():
+                    key_to_delete = lines[0].strip()
+                    source_file = full_path
+                    print(f"[DELETE_KEY] Found first key in {full_path}: {key_to_delete}")
+                    break
             except Exception as e:
-                print(f"[DELETE_KEY] ⚠️  Warning: Key removed from source but failed to save to solved file: {e}")
-            
-            return True
-        except Exception as e:
-            print(f"[DELETE_KEY] ❌ Exception: {e}")
-            import traceback
-            traceback.print_exc()
+                print(f"[DELETE_KEY] Error reading {full_path}: {e}")
+                continue
+        
+        if not key_to_delete:
+            print(f"[DELETE_KEY] ❌ No key found in any file")
             return False
+        
+        print(f"[DELETE_KEY] ✅ Found key: {key_to_delete} from {source_file}")
+        
+        # Bước 2: Xóa key này từ TẤT CẢ các file
+        print(f"[DELETE_KEY] Now removing '{key_to_delete}' from all key files...")
+        removed_from = []
+        
+        for key_file in key_files:
+            full_path = os.path.join(keys_dir, key_file)
+            if not os.path.exists(full_path):
+                continue
+            
+            try:
+                with open(full_path, "r", encoding="utf-8") as f:
+                    file_lines = f.readlines()
+                
+                # Lọc ra các dòng không chứa key này
+                original_count = len([l for l in file_lines if l.strip() == key_to_delete])
+                new_lines = [line for line in file_lines if line.strip() != key_to_delete]
+                
+                if original_count > 0:
+                    with open(full_path, "w", encoding="utf-8") as f:
+                        f.writelines(new_lines)
+                    print(f"[DELETE_KEY] ✅ Removed {original_count} occurrence from {key_file}, lines left: {len(new_lines)}")
+                    removed_from.append(key_file)
+                
+            except Exception as e:
+                print(f"[DELETE_KEY] ❌ Failed to process {full_path}: {e}")
+        
+        # Bước 3: Lưu key vào key_solved.txt
+        solved_dir = os.path.dirname(solved_file)
+        os.makedirs(solved_dir, exist_ok=True)
+        
+        try:
+            with open(solved_file, "a", encoding="utf-8") as f:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"{key_to_delete} | {timestamp}\n")
+            print(f"[DELETE_KEY] ✅ Added to {solved_file}")
+        except Exception as e:
+            print(f"[DELETE_KEY] ⚠️  Warning: Key removed from source but failed to save to solved file: {e}")
+        
+        print(f"[DELETE_KEY] ✅ COMPLETED: Removed '{key_to_delete}' from {removed_from if removed_from else 'no files'}")
+        return True
+        
+    except Exception as e:
+        print(f"[DELETE_KEY] ❌ Exception: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def generate_key(period):
     period_map_reverse = {"1 day": "1d", "7 day": "7d", "30 day": "30d", "90 day": "90d"}
@@ -418,7 +428,7 @@ def check_mb_payment():
     order = get_order(uid)
     if not order:
         print(f"[ORDER ERROR] Order not found: uid={uid}")
-        return jsonify({"status": "error", "message": "Đơn hàng không tồn tại. Hãy đợi trong giây lát và ấn lại vào nút 'Nhận Key'"}), 404
+        return jsonify({"status": "error", "message": "Lỗi! Hãy đợi trong giây lát và ấn lại vào nút 'Nhận Key'"}), 404
     if order[6] == 1:
         return jsonify({"status": "ok", "message": "Đã thanh toán trước đó"}), 200
 
@@ -536,11 +546,9 @@ def check_mb_payment():
     log_key_delivery(uid, email, key, period, "sent")
     
     # Xóa key từ file và lưu vào key_solved.txt sau khi email gửi thành công
-    period_code_map_reverse = {"1 day": "1d", "7 day": "7d", "30 day": "30d", "90 day": "90d"}
-    period_code = period_code_map_reverse.get(period, "30d")
-    print(f"[FLOW] Email sent successfully. Now deleting key for period: '{period}' -> '{period_code}'")
+    print(f"[FLOW] Email sent successfully. Now deleting key...")
     print(f"[FLOW] Key to delete: {key}")
-    success = delete_key_from_file(period_code)
+    success = delete_key_from_file(None)  # Hàm tự tìm key đầu tiên
     if success:
         print(f"[FLOW] ✅ Key deleted and moved to key_solved.txt")
     else:
