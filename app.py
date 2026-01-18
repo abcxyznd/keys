@@ -20,8 +20,8 @@ app = Flask(__name__)
 
 DB_FILE = "orders.db"
 
-SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "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")
-FROM_EMAIL = os.environ.get("FROM_EMAIL", "noreply@muakey.cloud")  # Email gửi từ
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
+FROM_EMAIL = os.environ.get("FROM_EMAIL", "")
 
 MB_API_URL = "https://thueapibank.vn/historyapimbbankv2/07bf677194ae4972714f01a3abf58c5f"
 
