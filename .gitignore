@@ -43,7 +43,8 @@ data/keys/
 data/coupon/
 data/links/
 data/shortenurl/
-*.txt
+data/keys/*.txt
+key_solved.txt
 
 # Database
 *.db
