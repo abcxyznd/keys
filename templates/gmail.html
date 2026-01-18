@@ -7,20 +7,23 @@
 <body style="margin:0;padding:0px 0;background-color:#121212;font-family:'SF Pro Display',sans-serif;color:#ffffff;display:flex;flex-direction:column;align-items:center;gap:20px;">
 
   <!-- CARD 1: KEY -->
-  <div style="text-align:left;background:rgba(10,15,25,0.92);border:2px solid rgba(0,255,255,0.18);border-radius:16px;box-shadow:0 0 30px rgba(0,255,255,0.06),inset 0 0 10px rgba(0,255,255,0.03);width:360px;overflow:hidden;font-family:Roboto,sans-serif;color:#bffcff;">
+  <div style="text-align:left;background:rgba(0,15,25,0.92);border:2px solid rgba(0,255,255,0.18);border-radius:16px;box-shadow:0 0 30px rgba(0,255,255,0.06),inset 0 0 10px rgba(0,255,255,0.03);width:360px;overflow:hidden;font-family:Roboto,sans-serif;color:#bffcff;">
     <div style="background:#0098a6;font-weight:700;font-size:14px;padding:12px 16px;border-top-left-radius:14px;border-top-right-radius:14px;text-align:left;color:#00121a;">
       🎮 Muakey.cloud - Key
     </div>
 
     <div style="padding:20px;text-align:left;">
       <span style="font-weight:bold;color:#00ffff;display:block;margin-top:12px;margin-bottom:4px;">UID đơn hàng của bạn:</span>
-      <span style="display:block;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.18);border-radius:6px;padding:10px 12px;color:#00eaff;font-family:monospace;font-size:13px;word-break:break-all;">{uid}</span>
+      <span style="display:block;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.18);border-radius:6px;padding:10px 12px;color:#00eaff;font-family:monospace;font-size:13px;word-break:break-all;">{{uid}}</span>
 
       <span style="font-weight:bold;color:#00ffff;display:block;margin-top:12px;margin-bottom:4px;">Loại key:</span>
-      <span style="display:block;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.18);border-radius:6px;padding:10px 12px;color:#00eaff;font-family:monospace;font-size:13px;word-break:break-all;">{period}</span>
+      <span style="display:block;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.18);border-radius:6px;padding:10px 12px;color:#00eaff;font-family:monospace;font-size:13px;word-break:break-all;">{{period}}</span>
 
       <span style="font-weight:bold;color:#00ffff;display:block;margin-top:12px;margin-bottom:4px;">Key của bạn:</span>
-      <span style="display:block;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.18);border-radius:6px;padding:10px 12px;color:#00eaff;font-family:monospace;font-size:13px;word-break:break-all;">{key}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="flex:1;display:block;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.18);border-radius:6px;padding:10px 12px;color:#00eaff;font-family:monospace;font-size:13px;word-break:break-all;" id="keyField">{{key}}</span>
+        <button onclick="copyToClipboard(document.getElementById('keyField').textContent)" style="background:rgba(0,255,255,0.2);border:1px solid rgba(0,255,255,0.4);border-radius:6px;padding:10px;cursor:pointer;color:#00ffff;font-size:14px;flex-shrink:0;transition:all 0.3s ease;" onmouseover="this.style.background='rgba(0,255,255,0.4)'" onmouseout="this.style.background='rgba(0,255,255,0.2)'">📋</button>
+      </div>
 
 
       <p style="margin-top:12px;font-size:13px;color:#bffcff;">Nếu chưa thấy key hoạt động, vui lòng ib Admin qua Zalo: <b>0979110280</b> hoặc Telegram: <b>@nguyenduc666</b></p>
@@ -41,5 +44,14 @@
     </div>
   </div>
 
+  <script>
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Key đã được copy vào clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+      });
+    }
+  </script>
 </body>
 </html>
