@@ -358,12 +358,17 @@ def check_mb_payment():
     if not uid or not email:
         return jsonify({"status": "error", "message": "Thiếu thông tin!"}), 400
 
-    period_map = {"1d": "1 day", "7d": "7 day", "30d": "30 day", "90d": "90 day"}
+    period_map = {"1d": "1 day", "7d": "7 day", "30d": "30 day", "90d": "90d"}
     period = period_map.get(period_code, "30 day")
 
     order = get_order(uid)
     if not order:
-        return jsonify({"status": "error", "message": "Đơn hàng không tồn tại"}), 404
+        print(f"[ORDER ERROR] Order not found: uid={uid}")
+        # Thử tạo order mới nếu chưa tồn tại (race condition fallback)
+        insert_order(uid, generate_verification_code())
+        order = get_order(uid)
+        if not order:
+            return jsonify({"status": "error", "message": "Đơn hàng không tồn tại. Vui lòng refresh trang và thử lại"}), 404
     if order[6] == 1:
         return jsonify({"status": "ok", "message": "Đã thanh toán trước đó"}), 200
 
