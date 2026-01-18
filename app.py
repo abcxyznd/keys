@@ -216,7 +216,7 @@ def delete_key_from_file(period_code):
         return False
 
 def generate_key(period):
-    period_map_reverse = {"1 day": "1d", "7 day": "7d", "30 day": "30d", "90 day": "90d"}
+    period_map_reverse = {"1 day": "1d", "7 day": "7d", "30 day": "30d", "90d": "90d"}
     period_code = period_map_reverse.get(period, "30d")
     return get_key_from_file(period_code)
 
@@ -375,6 +375,51 @@ def check_mb_payment():
         return jsonify({"status": "error", "message": f"Lỗi đọc API MB: {e}"}), 500
     # --- END FIXED API CALL ---
 
+    now = datetime.now()
+    found_tx = None
+    code_upper = code_order.upper()
+    
+    for tx in transactions:
+        # Chỉ kiểm tra giao dịch incoming (nhanh nhất)
+        if tx.get("type") != "IN":
+            continue
+
+        # Kiểm tra amount (nhanh, không cần parse)
+        try:
+            # Amount có thể là string với dấu phân cách: "1,000" hoặc "1.000"
+            amount_str = tx.get("amount", "0").replace(",", "").replace(".", "")
+            credit = int(amount_str)
+        except:
+            continue
+        
+        if credit != amount:
+            continue
+            
+        # Kiểm tra code trong description (nhanh)
+        desc = tx.get("description", "").upper()
+        if code_upper not in desc:
+            continue
+
+        # Parse time chỉ khi cần thiết (mất nhiều thời gian)
+        try:
+            tx_time = datetime.strptime(tx["transactionDate"], "%d/%m/%Y %H:%M:%S")
+        except:
+            continue
+
+        # Kiểm tra time (bỏ giao dịch cũ hơn 24h)
+        time_diff = now - tx_time
+        if time_diff >= timedelta(hours=24):
+            continue
+        
+        found_tx = tx
+        break
+
+    if not found_tx:
+        return jsonify({
+            "status": "error",
+            "message": f"⏳ Giao dịch với mã '{code_order}' chưa tìm thấy. Hãy đợi trong khoảng 20 - 30s rồi ấn lại vào nút 'Nhận Key' ✅"
+        }), 400
+
     # Chuẩn bị base_period cho việc kiểm tra coupon
     base_period = period_code.replace("_v2", "")
     
@@ -405,51 +450,6 @@ def check_mb_payment():
 
     final_amount = round(amount * (100 - discount_percent) / 100)
 
-    now = datetime.now()
-    found_tx = None
-    code_upper = code_order.upper()
-    
-    for tx in transactions:
-        # Chỉ kiểm tra giao dịch incoming (nhanh nhất)
-        if tx.get("type") != "IN":
-            continue
-
-        # Kiểm tra amount (nhanh, không cần parse)
-        try:
-            # Amount có thể là string với dấu phân cách: "1,000" hoặc "1.000"
-            amount_str = tx.get("amount", "0").replace(",", "").replace(".", "")
-            credit = int(amount_str)
-        except:
-            continue
-        
-        if credit != final_amount:
-            continue
-            
-        # Kiểm tra code trong description (nhanh)
-        desc = tx.get("description", "").upper()
-        if code_upper not in desc:
-            continue
-
-        # Parse time chỉ khi cần thiết (mất nhiều thời gian)
-        try:
-            tx_time = datetime.strptime(tx["transactionDate"], "%d/%m/%Y %H:%M:%S")
-        except:
-            continue
-
-        # Kiểm tra time (bỏ giao dịch cũ hơn 24h)
-        time_diff = now - tx_time
-        if time_diff >= timedelta(hours=24):
-            continue
-        
-        found_tx = tx
-        break
-
-    if not found_tx:
-        return jsonify({
-            "status": "error",
-            "message": f"⏳ Giao dịch với mã '{code_order}' chưa tìm thấy. Hãy đợi trong khoảng 20 - 30s rồi ấn lại vào nút 'Nhận Key' ✅"
-        }), 400
-
     key = generate_key(period)
     if not key:
         return jsonify({
@@ -469,9 +469,9 @@ def check_mb_payment():
     mark_paid(uid)
     
     # Xóa key từ file và lưu vào key_solved.txt sau khi email gửi thành công
-    period_code_map_reverse = {"1 day": "1d", "7 day": "7d", "30 day": "30d", "90 day": "90d"}
+    period_code_map_reverse = {"1 day": "1d", "7 day": "7d", "30 day": "30d", "90d": "90d"}
     period_code = period_code_map_reverse.get(period, "30d")
-    print(f"[FLOW] Email sent successfully. Period: {period} | Period code: {period_code} | Key: {key}")
+    print(f"[FLOW] Email sent successfully. Now deleting key for period: {period} -> {period_code}")
     success = delete_key_from_file(period_code)
     if success:
         print(f"[FLOW] ✅ Key deleted and moved to key_solved.txt")
