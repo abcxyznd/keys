@@ -222,35 +222,56 @@ def delete_key_from_file(key_to_delete):
     key_files = ["key1d.txt", "key7d.txt", "key30d.txt", "key90d.txt"]
     
     try:
-        print(f"[DELETE_KEY] ✅ Deleting key: {key_to_delete} from all files...")
+        print(f"[DELETE_KEY] ✅ START: Deleting key: {key_to_delete} from all files...")
         
         # Xóa key này từ TẤT CẢ các file
         removed_from = []
         
         for key_file in key_files:
             full_path = os.path.join(keys_dir, key_file)
+            print(f"[DELETE_KEY] Checking {full_path}...")
+            
             if not os.path.exists(full_path):
                 print(f"[DELETE_KEY] ℹ️  File not found: {full_path}")
                 continue
             
             try:
+                # Bước 1: Đọc file
                 with open(full_path, "r", encoding="utf-8") as f:
                     file_lines = f.readlines()
                 
+                print(f"[DELETE_KEY] Read {len(file_lines)} lines from {full_path}")
+                
                 # Đếm key cần xóa
                 original_count = len([l for l in file_lines if l.strip() == key_to_delete])
+                print(f"[DELETE_KEY] Found {original_count} occurrence(s) of key in {full_path}")
+                
+                if original_count == 0:
+                    continue
                 
                 # Lọc ra các dòng không chứa key này
                 new_lines = [line for line in file_lines if line.strip() != key_to_delete]
+                print(f"[DELETE_KEY] After filtering: {len(new_lines)} lines remain")
                 
-                if original_count > 0:
-                    with open(full_path, "w", encoding="utf-8") as f:
-                        f.writelines(new_lines)
-                    print(f"[DELETE_KEY] ✅ Removed {original_count} occurrence from {key_file}, lines left: {len(new_lines)}")
-                    removed_from.append(key_file)
+                # Bước 2: Ghi file lại
+                with open(full_path, "w", encoding="utf-8") as f:
+                    f.writelines(new_lines)
+                    f.flush()
+                    os.fsync(f.fileno())  # Force disk sync
+                
+                print(f"[DELETE_KEY] ✅ Removed {original_count} occurrence from {key_file}, lines left: {len(new_lines)}")
+                removed_from.append(key_file)
+                
+                # Bước 3: Verify write
+                with open(full_path, "r", encoding="utf-8") as f:
+                    verify_lines = f.readlines()
+                verify_count = len([l for l in verify_lines if l.strip() == key_to_delete])
+                print(f"[DELETE_KEY] VERIFY: {verify_count} occurrence(s) still in {full_path}")
                 
             except Exception as e:
                 print(f"[DELETE_KEY] ❌ Failed to process {full_path}: {e}")
+                import traceback
+                traceback.print_exc()
         
         # Lưu key vào key_solved.txt
         solved_dir = os.path.dirname(solved_file)
@@ -260,6 +281,8 @@ def delete_key_from_file(key_to_delete):
             with open(solved_file, "a", encoding="utf-8") as f:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 f.write(f"{key_to_delete} | {timestamp}\n")
+                f.flush()
+                os.fsync(f.fileno())
             print(f"[DELETE_KEY] ✅ Added to {solved_file}")
         except Exception as e:
             print(f"[DELETE_KEY] ⚠️  Warning: Key removed from source but failed to save to solved file: {e}")
@@ -269,11 +292,10 @@ def delete_key_from_file(key_to_delete):
             return True
         else:
             print(f"[DELETE_KEY] ⚠️  WARNING: Key '{key_to_delete}' was not found in any file")
-            # Vẫn trả True vì có thể key đã bị xóa trước đó
             return True
         
     except Exception as e:
-        print(f"[DELETE_KEY] ❌ Exception: {e}")
+        print(f"[DELETE_KEY] ❌ EXCEPTION: {e}")
         import traceback
         traceback.print_exc()
         return False
