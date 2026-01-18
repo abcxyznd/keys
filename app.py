@@ -225,21 +225,18 @@ def send_key(email, key, uid, period="30 day"):
     Gửi email qua SendGrid API và trả về (ok: bool, err_msg: str)
     """
     try:
-        print(f"[EMAIL START] Gửi email cho: {email}, key: {key}, uid: {uid}, period: {period}")
-        
         # tìm template an toàn theo path file này
         base_dir = os.path.dirname(os.path.abspath(__file__))
         template_path = os.path.join(base_dir, "templates", "gmail.html")
 
         if not os.path.exists(template_path):
             err = f"Template not found: {template_path}"
-            print(f"[EMAIL ERROR ❌] {err}")
+            print(f"[EMAIL ERROR] {err}")
             return False, err
 
         with open(template_path, "r", encoding="utf-8") as f:
             html_content = f.read()
 
-        # phòng trường hợp key là None
         key_for_email = key if key is not None else "N/A"
         
         # Map period để hiển thị
@@ -251,7 +248,7 @@ def send_key(email, key, uid, period="30 day"):
         }
         period_display = period_display_map.get(period, period)
 
-        # format và build message
+        # format template
         try:
             html_content = html_content.format(
                 uid=uid, 
@@ -260,44 +257,33 @@ def send_key(email, key, uid, period="30 day"):
                 link="https://tinyurl.com/2a999ad7"
             ).replace("\r", "")
         except Exception as e:
-            print(f"[EMAIL ERROR ❌] Template format error: {e}")
+            print(f"[EMAIL ERROR] Template format error: {e}")
             return False, f"Template format error: {e}"
 
-        # Tạo message SendGrid
-        message = Mail(
-            from_email=FROM_EMAIL,
-            to_emails=email,
-            subject="🔑 Key & Mã đơn hàng của bạn đã sẵn sàng!",
-            html_content=html_content
-        )
-        
-        print(f"[EMAIL DEBUG] Message created successfully")
-        print(f"[EMAIL DEBUG] FROM: {FROM_EMAIL}")
-        print(f"[EMAIL DEBUG] TO: {email}")
-        print(f"[EMAIL DEBUG] PERIOD: {period_display}")
-        print(f"[EMAIL DEBUG] SUBJECT: 🔑 Key & Mã đơn hàng của bạn đã sẵn sàng!")
-        print(f"[EMAIL DEBUG] SendGrid API Key length: {len(SENDGRID_API_KEY) if SENDGRID_API_KEY else 0}")
+        # Gửi qua SendGrid - tối ưu timeout
+        try:
+            sg = SendGridAPIClient(SENDGRID_API_KEY, timeout=5)  # 5s timeout
+            message = Mail(
+                from_email=FROM_EMAIL,
+                to_emails=email,
+                subject="🔑 Key & Mã đơn hàng của bạn đã sẵn sàng!",
+                html_content=html_content
+            )
+            response = sg.send(message, request_headers={'X-TEST-REQUEST': 'false'})
 
-        # Gửi qua SendGrid
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
-        print(f"[EMAIL DEBUG] SendGridAPIClient initialized")
-        
-        response = sg.send(message)
-        
-        print(f"[EMAIL DEBUG] Response status code: {response.status_code}")
-        print(f"[EMAIL DEBUG] Response body: {response.body}")
-
-        if response.status_code == 202:
-            print(f"[EMAIL SENT ✅] To: {email} (UID: {uid}, Key: {key}, Period: {period_display})")
-            return True, ""
-        else:
-            err = f"SendGrid error: {response.status_code} - {response.body}"
-            print(f"[EMAIL ERROR ❌] {err}")
-            return False, err
+            if response.status_code == 202:
+                print(f"[EMAIL SENT] {email} ({uid})")
+                return True, ""
+            else:
+                err = f"SendGrid error: {response.status_code}"
+                print(f"[EMAIL ERROR] {err}")
+                return False, err
+        except Exception as sg_err:
+            print(f"[EMAIL ERROR] SendGrid: {sg_err}")
+            return False, str(sg_err)
 
     except Exception as e:
-        # in lỗi chi tiết để debug
-        print(f"[EMAIL ERROR ❌] Exception: {e}")
+        print(f"[EMAIL ERROR] {e}")
         import traceback
         traceback.print_exc()
         return False, f"Lỗi gửi email: {e}"
