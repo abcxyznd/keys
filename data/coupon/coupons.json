@@ -1,0 +1,14 @@
+{
+  "MDUCGAY": {
+    "discount": 25,
+    "uses": 5,
+    "uses_left": 0,
+    "expires_at": "2026-12-31",
+    "types": [
+      "1d",
+      "7d",
+      "30d",
+      "90d"
+    ]
+  }
+}
