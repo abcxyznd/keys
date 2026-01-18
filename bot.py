@@ -5,6 +5,9 @@ from datetime import datetime
 from telebot import TeleBot, types
 from telebot.util import extract_arguments
 
+# Import GitHub API helper
+from github_helper import get_github_manager
+
 # =================== Bot Configuration ===================
 TG_BOT_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
 TG_CHAT_ID = "7454505306"
@@ -43,11 +46,22 @@ def load_coupons():
         return {}
 
 def save_coupons(coupons):
-    """Save coupons to JSON file"""
+    """Save coupons to JSON file and GitHub API"""
     try:
         os.makedirs(os.path.dirname(COUPON_FILE), exist_ok=True)
         with open(COUPON_FILE, "w", encoding="utf-8") as f:
             json.dump(coupons, f, indent=2, ensure_ascii=False)
+        
+        # Update GitHub if available
+        github_mgr = get_github_manager()
+        if github_mgr.use_github:
+            content = json.dumps(coupons, indent=2, ensure_ascii=False)
+            github_mgr._write_file_content(
+                'data/coupon/coupons.json',
+                content,
+                'Update coupons via bot command'
+            )
+        
         return True
     except Exception as e:
         print(f"[COUPON ERROR] Failed to save coupons: {e}")
@@ -583,6 +597,11 @@ def process_keys(message):
             for key in keys:
                 f.write(key + "\n")
         
+        # Update GitHub if available
+        github_mgr = get_github_manager()
+        if github_mgr.use_github:
+            github_mgr.add_key(period, '\n'.join(keys))
+        
         del user_states[chat_id]
         
         success_msg = f"✅ Đã thêm {len(keys)} key\n\n"
@@ -690,6 +709,19 @@ def process_delete_key(message):
         with open(file_path, "w", encoding="utf-8") as f:
             for key in keys:
                 f.write(key + "\n")
+        
+        # Update GitHub if available
+        github_mgr = get_github_manager()
+        if github_mgr.use_github:
+            # Write updated file content to GitHub
+            content = '\n'.join(keys)
+            if keys:
+                content += '\n'
+            github_mgr._write_file_content(
+                f'data/keys/key{period}.txt',
+                content,
+                f'Remove key via bot command'
+            )
         
         del user_states[chat_id]
         
