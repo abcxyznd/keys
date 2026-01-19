@@ -1,12 +1,225 @@
 import os
 import json
 import requests
+import base64
 from datetime import datetime
 from telebot import TeleBot, types
 from telebot.util import extract_arguments
 
-# Import GitHub API helper
-from github_helper import get_github_manager
+# =================== GitHub API Helper ===================
+class GitHubDataManager:
+    """Manage key and solved key data via GitHub API"""
+    
+    def __init__(self):
+        self.token = os.environ.get('GITHUB_TOKEN', '')
+        self.owner = os.environ.get('GITHUB_OWNER', '')
+        self.repo = os.environ.get('GITHUB_REPO', '')
+        self.api_base = 'https://api.github.com'
+        self.use_github = bool(self.token and self.owner and self.repo)
+        
+        if self.use_github:
+            print(f"[GITHUB] ✅ GitHub API enabled: {self.owner}/{self.repo}")
+        else:
+            print("[GITHUB] ⚠️  GitHub API disabled (missing GITHUB_TOKEN, GITHUB_OWNER, or GITHUB_REPO)")
+        
+        self.headers = {
+            'Authorization': f'token {self.token}',
+            'Accept': 'application/vnd.github.v3+json',
+        }
+
+    def _get_file_sha(self, file_path):
+        """Get file SHA for update operations"""
+        if not self.use_github:
+            return None
+        
+        try:
+            url = f'{self.api_base}/repos/{self.owner}/{self.repo}/contents/{file_path}'
+            response = requests.get(url, headers=self.headers, timeout=10)
+            
+            if response.status_code == 200:
+                return response.json().get('sha')
+            elif response.status_code == 404:
+                return None
+            else:
+                print(f"[GITHUB] Error getting file SHA: {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"[GITHUB] Exception getting file SHA: {e}")
+            return None
+
+    def _read_file_content(self, file_path):
+        """Read file content from GitHub"""
+        if not self.use_github:
+            return None
+        
+        try:
+            url = f'{self.api_base}/repos/{self.owner}/{self.repo}/contents/{file_path}'
+            response = requests.get(
+                url,
+                headers={**self.headers, 'Accept': 'application/vnd.github.v3.raw'},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                return response.text
+            elif response.status_code == 404:
+                return ""
+            else:
+                print(f"[GITHUB] Error reading file: {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"[GITHUB] Exception reading file: {e}")
+            return None
+
+    def _write_file_content(self, file_path, content, commit_message):
+        """Write/update file content to GitHub"""
+        if not self.use_github:
+            return False
+        
+        try:
+            url = f'{self.api_base}/repos/{self.owner}/{self.repo}/contents/{file_path}'
+            
+            sha = self._get_file_sha(file_path)
+            
+            content_b64 = base64.b64encode(
+                content.encode('utf-8') if isinstance(content, str) else content
+            ).decode('utf-8')
+            
+            payload = {
+                'message': commit_message,
+                'content': content_b64,
+            }
+            
+            if sha:
+                payload['sha'] = sha
+            
+            response = requests.put(url, headers=self.headers, json=payload, timeout=10)
+            
+            if response.status_code in [200, 201]:
+                print(f"[GITHUB] ✅ Updated {file_path}")
+                return True
+            else:
+                print(f"[GITHUB] ❌ Failed to update {file_path}: {response.status_code}")
+                print(f"[GITHUB] Response: {response.text}")
+                return False
+        except Exception as e:
+            print(f"[GITHUB] ❌ Exception updating file: {e}")
+            return False
+
+    def add_key(self, period, key_value):
+        """Add new key to appropriate file"""
+        if not self.use_github:
+            return False
+        
+        file_map = {
+            '1d': 'data/keys/key1d.txt',
+            '7d': 'data/keys/key7d.txt',
+            '30d': 'data/keys/key30d.txt',
+            '90d': 'data/keys/key90d.txt',
+        }
+        
+        if period not in file_map:
+            print(f"[GITHUB] ❌ Invalid period: {period}")
+            return False
+        
+        try:
+            file_path = file_map[period]
+            content = self._read_file_content(file_path)
+            
+            if content is None:
+                print(f"[GITHUB] ⚠️  Could not read {file_path}")
+                return False
+            
+            new_content = (content + key_value + '\n') if content else (key_value + '\n')
+            
+            return self._write_file_content(
+                file_path,
+                new_content,
+                f'Add {period} key via bot command'
+            )
+        except Exception as e:
+            print(f"[GITHUB] ❌ Exception adding key: {e}")
+            return False
+
+    def list_keys(self, period):
+        """List all keys for a period"""
+        if not self.use_github:
+            return []
+        
+        file_map = {
+            '1d': 'data/keys/key1d.txt',
+            '7d': 'data/keys/key7d.txt',
+            '30d': 'data/keys/key30d.txt',
+            '90d': 'data/keys/key90d.txt',
+        }
+        
+        if period not in file_map:
+            return []
+        
+        try:
+            content = self._read_file_content(file_map[period])
+            if content:
+                return [line.strip() for line in content.split('\n') if line.strip()]
+            return []
+        except Exception as e:
+            print(f"[GITHUB] ❌ Exception listing keys: {e}")
+            return []
+
+    def delete_key(self, period, key_to_delete):
+        """Delete a specific key from a period file"""
+        if not self.use_github:
+            return False
+        
+        file_map = {
+            '1d': 'data/keys/key1d.txt',
+            '7d': 'data/keys/key7d.txt',
+            '30d': 'data/keys/key30d.txt',
+            '90d': 'data/keys/key90d.txt',
+        }
+        
+        if period not in file_map:
+            print(f"[GITHUB] ❌ Invalid period: {period}")
+            return False
+        
+        try:
+            file_path = file_map[period]
+            content = self._read_file_content(file_path)
+            
+            if content is None:
+                print(f"[GITHUB] ⚠️  Could not read {file_path}")
+                return False
+            
+            lines = [line.strip() for line in content.split('\n') if line.strip()]
+            
+            if key_to_delete not in lines:
+                print(f"[GITHUB] ℹ️  Key not found in {file_path}")
+                return False
+            
+            # Remove the key
+            new_lines = [line for line in lines if line != key_to_delete]
+            new_content = '\n'.join(new_lines)
+            if new_lines:
+                new_content += '\n'
+            
+            return self._write_file_content(
+                file_path,
+                new_content,
+                f'Remove key via bot command'
+            )
+        except Exception as e:
+            print(f"[GITHUB] ❌ Exception deleting key: {e}")
+            return False
+
+
+# Global instance
+github_manager = None
+
+def get_github_manager():
+    """Get or create GitHub manager instance"""
+    global github_manager
+    if github_manager is None:
+        github_manager = GitHubDataManager()
+    return github_manager
 
 # =================== Bot Configuration ===================
 TG_BOT_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
@@ -593,14 +806,18 @@ def process_keys(message):
         # Tạo thư mục nếu chưa tồn tại
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         
+        # Update GitHub first (if available)
+        github_mgr = get_github_manager()
+        if github_mgr.use_github:
+            for key in keys:
+                success = github_mgr.add_key(period, key)
+                if not success:
+                    print(f"[BOT] Warning: Failed to add key to GitHub: {key}")
+        
+        # Always update local file as fallback
         with open(file_path, "a", encoding="utf-8") as f:
             for key in keys:
                 f.write(key + "\n")
-        
-        # Update GitHub if available
-        github_mgr = get_github_manager()
-        if github_mgr.use_github:
-            github_mgr.add_key(period, '\n'.join(keys))
         
         del user_states[chat_id]
         
@@ -704,24 +921,19 @@ def process_delete_key(message):
     file_path = os.path.join("data", "keys", f"key{period}.txt")
     
     try:
+        # Update GitHub first (if available)
+        github_mgr = get_github_manager()
+        if github_mgr.use_github:
+            success = github_mgr.delete_key(period, key_to_delete)
+            if not success:
+                print(f"[BOT] Warning: Failed to delete key from GitHub")
+        
+        # Always update local file
         keys.remove(key_to_delete)
         
         with open(file_path, "w", encoding="utf-8") as f:
             for key in keys:
                 f.write(key + "\n")
-        
-        # Update GitHub if available
-        github_mgr = get_github_manager()
-        if github_mgr.use_github:
-            # Write updated file content to GitHub
-            content = '\n'.join(keys)
-            if keys:
-                content += '\n'
-            github_mgr._write_file_content(
-                f'data/keys/key{period}.txt',
-                content,
-                f'Remove key via bot command'
-            )
         
         del user_states[chat_id]
         
