@@ -4,84 +4,274 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Muakey.cloud</title>
-      <meta name="description" content="Muakey.cloud - Shop Key Rẻ Nhất" />
-
-   <!-- Favicon -->
+    <meta name="description" content="Muakey.cloud - Shop Key Rẻ Nhất" />
     <link rel="icon" href="https://files.catbox.moe/zrq6pf.png" type="image/x-icon" />
     <link rel="shortcut icon" href="https://files.catbox.moe/zrq6pf.png" type="image/x-icon" />
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Rajdhani:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;font-family:'Rajdhani',sans-serif;background:radial-gradient(circle at 50% -20%,#0d1117,#05060a 80%);color:#e5f6ff;}
-body{display:flex;justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto;}
-body::before{content:"";position:fixed;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(90deg,rgba(0,255,255,0.04) 1px,transparent 1px),linear-gradient(rgba(0,255,255,0.04) 1px,transparent 1px);background-size:40px 40px;animation:moveGrid 10s linear infinite;z-index:0;pointer-events:none;}
-@keyframes moveGrid{from{background-position:0 0,0 0;}to{background-position:40px 40px,40px 40px;}}
-.wrapper{width:100%;max-width:360px;z-index:2;display:flex;flex-direction:column;gap:16px;align-items:center;}
-.terminal{width:100%;background:#0f1113;border:2px solid rgba(0,255,136,0.12);border-radius:14px;box-shadow:0 0 22px rgba(0,255,136,0.06);overflow:hidden;}
-.terminal-header{background:linear-gradient(90deg,#00ff99,#00cc88);color:#00110a;padding:8px 12px;font-weight:700;font-size:13px;font-family:'Orbitron',sans-serif;}
-.terminal-body{padding:10px;font-size:13px;color:#00ff99;height:100px;max-height:250px;overflow-y:auto;line-height:1.35;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,'Courier New',monospace;}
-.terminal-line::before{content:"> ";color:#9cffb8;}
-.card{position:relative;background:rgba(10,15,25,0.92);border:2px solid rgba(0,255,255,0.18);border-radius:14px;box-shadow:0 0 30px rgba(0,255,255,0.06),inset 0 0 10px rgba(0,255,255,0.03);padding:0;width:100%;text-align:center;backdrop-filter:blur(8px);transition:transform .22s ease,box-shadow .22s ease;}
-.card:hover{transform:translateY(-3px);box-shadow:0 8px 40px rgba(0,255,255,0.08);}
-.card-header{background:#0098a6;font-family:'Orbitron',sans-serif;font-weight:700;font-size:13px;padding:12px 16px;border-top-left-radius:12px;border-top-right-radius:12px;text-align:left;box-shadow:inset 0 -1px 4px rgba(0,255,255,0.05);}
-.card-body{padding:16px;text-align:center;}
-.card-body select,.card-body input[type="email"],.card-body input[type="text"],.card-body button{width:92%;margin:6px 0;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,255,255,0.08);background:rgba(0,10,20,0.6);color:#bffcff;font-size:13px;}
-.card-body button{background:rgba(255,255,255,0.1);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);color:#e5f6ff;font-weight:700;cursor:pointer;transition:all .3s cubic-bezier(0.34,1.56,0.64,1);border:1.5px solid rgba(255,255,255,0.3);box-shadow:0 8px 32px rgba(0,200,255,0.12),inset 2px 2px 1px 0 rgba(255,255,255,0.5),inset -1px -1px 1px 1px rgba(255,255,255,0.5);position:relative;overflow:hidden;}
-.card-body button::before{content:"";position:absolute;inset:0;border-radius:inherit;filter:url(#glass-distortion);opacity:0;transition:opacity .3s ease;}
-.card-body button::after{content:"";position:absolute;top:50%;left:50%;width:0;height:0;background:radial-gradient(circle,rgba(255,255,255,0.4),transparent);border-radius:50%;transform:translate(-50%,-50%);transition:width .4s,height .4s;pointer-events:none;}
-.card-body button:active::after{width:400px;height:400px;}
-.card-body button:hover{background:rgba(255,255,255,0.15);box-shadow:0 16px 48px rgba(0,200,255,0.18),inset 2px 2px 1px 0 rgba(255,255,255,0.6),inset -1px -1px 1px 1px rgba(255,255,255,0.6);transform:translateY(-4px);}
-.card-body button:active{background:rgba(255,255,255,0.2);transform:translateY(-1px);box-shadow:inset 0 2px 8px rgba(0,200,255,0.3),inset 0 -1px 4px rgba(0,0,0,0.1);}
-h2{font-size:17px;color:#00eaff;margin:6px 0 10px;text-shadow:0 0 8px #00eaff;}
-.text1{font-size:17px;color:#00f7ff;margin:6px 0 10px;}
-label{display:block;font-size:13px;color:#88faff;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.6px;}
-.qr img{width:180px;max-width:100%;height:auto;margin:10px 0;border-radius:8px;border:2px solid rgba(0,255,255,0.08);box-shadow:0 0 12px rgba(0,255,255,0.04);}
-.video {
-  max-width: 500px; /* chiều ngang tối đa */
-  width: 100%;      /* co giãn theo container nếu nhỏ hơn max */
-  height: auto;     /* chiều cao tự động theo tỉ lệ */
-  margin: 10px 0;
-  border-radius: 8px;
-  border: 2px solid rgba(0, 255, 255, 0.08);
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.04);
+html,body{height:100%;font-family:'Inter',system-ui,-apple-system,sans-serif;background:linear-gradient(145deg, #0a0a0f 0%, #0d1117 50%, #0a0e14 100%);color:#e5f6ff;}
+body{display:flex;justify-content:center;align-items:flex-start;padding:24px 16px;overflow-y:auto;}
+
+/* Animated background */
+body::before{
+  content:"";position:fixed;top:0;left:0;right:0;bottom:0;
+  background:radial-gradient(circle at 20% 20%, rgba(0,212,255,0.08) 0%, transparent 50%),
+             radial-gradient(circle at 80% 80%, rgba(138,43,226,0.06) 0%, transparent 50%),
+             radial-gradient(circle at 50% 50%, rgba(0,255,136,0.04) 0%, transparent 60%);
+  z-index:0;pointer-events:none;
+  animation: pulse 8s ease-in-out infinite alternate;
+}
+@keyframes pulse{
+  0%{opacity:0.6;transform:scale(1);}
+  100%{opacity:1;transform:scale(1.05);}
 }
 
-#status{margin-top:8px;font-weight:700;font-size:13px;color:#7fff9a;text-shadow:0 0 6px rgba(0,255,159,0.06);word-break:break-word;white-space:normal;line-height:1.3;text-align:center;max-height:64px;overflow-y:auto;}
-.footer{margin-top:12px;font-size:11px;color:#9ab;border-top:1px solid rgba(0,255,255,0.04);padding-top:8px;text-align:center;}
+/* Grid overlay */
+body::after{
+  content:"";position:fixed;top:0;left:0;right:0;bottom:0;
+  background-image:linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px),
+                   linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px);
+  background-size:50px 50px;
+  z-index:0;pointer-events:none;
+}
+
+.wrapper{width:100%;max-width:400px;z-index:2;display:flex;flex-direction:column;gap:20px;align-items:center;}
+
+/* Terminal */
+.terminal{
+  width:100%;
+  background:linear-gradient(145deg, rgba(15,20,30,0.95), rgba(10,15,20,0.98));
+  border:1px solid rgba(0,255,136,0.15);
+  border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(0,255,136,0.05);
+  overflow:hidden;
+  backdrop-filter:blur(10px);
+}
+.terminal-header{
+  background:linear-gradient(90deg, #00d4aa, #00b4a0);
+  color:#001a10;padding:10px 16px;
+  font-weight:700;font-size:12px;
+  display:flex;align-items:center;gap:8px;
+  letter-spacing:0.5px;
+}
+.terminal-header svg{width:16px;height:16px;}
+.terminal-body{
+  padding:14px 16px;font-size:13px;color:#00ff99;
+  height:110px;max-height:250px;overflow-y:auto;line-height:1.5;
+  white-space:pre-wrap;font-family:'SF Mono',Consolas,monospace;
+}
+.terminal-line::before{content:"> ";color:#00ff99;opacity:0.5;}
+
+/* Cards */
+.card{
+  position:relative;width:100%;
+  background:linear-gradient(145deg, rgba(15,20,35,0.9), rgba(10,15,25,0.95));
+  border:1px solid rgba(0,212,255,0.12);
+  border-radius:20px;
+  box-shadow:0 16px 64px rgba(0,0,0,0.4), 0 0 60px rgba(0,212,255,0.04);
+  overflow:hidden;
+  backdrop-filter:blur(20px);
+  transition:transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover{transform:translateY(-4px);box-shadow:0 24px 80px rgba(0,0,0,0.5), 0 0 80px rgba(0,212,255,0.06);}
+
+.card-header{
+  background:linear-gradient(90deg, #00b4d8, #0096c7, #0077b6);
+  padding:16px 20px;
+  display:flex;align-items:center;gap:10px;
+  font-weight:700;font-size:14px;
+  color:#ffffff;letter-spacing:0.3px;
+}
+.card-header svg{width:20px;height:20px;flex-shrink:0;}
+
+.card-body{padding:20px;text-align:center;}
+
+/* Form elements */
+.card-body select,
+.card-body input[type="email"],
+.card-body input[type="text"]{
+  width:100%;margin:8px 0;padding:14px 16px;
+  border-radius:12px;
+  border:1px solid rgba(0,212,255,0.15);
+  background:rgba(0,20,40,0.6);
+  color:#e5f6ff;font-size:14px;
+  transition:all 0.3s ease;
+  outline:none;
+}
+.card-body select:focus,
+.card-body input:focus{
+  border-color:rgba(0,212,255,0.4);
+  box-shadow:0 0 20px rgba(0,212,255,0.1);
+}
+.card-body select{cursor:pointer;}
+.card-body select option{background:#0a1520;color:#e5f6ff;}
+
+/* Liquid Glass Buttons */
+.btn-glass{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px 24px;
+  background:linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.2);
+  border-radius:14px;
+  color:#ffffff;font-weight:600;font-size:14px;
+  cursor:pointer;
+  transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow:0 8px 32px rgba(0,180,255,0.12),
+             inset 0 1px 0 rgba(255,255,255,0.3),
+             inset 0 -1px 0 rgba(255,255,255,0.1);
+  position:relative;overflow:hidden;
+  text-decoration:none;
+}
+.btn-glass::before{
+  content:"";position:absolute;top:0;left:-100%;
+  width:100%;height:100%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition:left 0.5s ease;
+}
+.btn-glass:hover::before{left:100%;}
+.btn-glass:hover{
+  transform:translateY(-3px);
+  background:linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%);
+  box-shadow:0 16px 48px rgba(0,180,255,0.2),
+             inset 0 1px 0 rgba(255,255,255,0.4),
+             inset 0 -1px 0 rgba(255,255,255,0.15);
+}
+.btn-glass:active{
+  transform:translateY(-1px);
+  background:linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+}
+.btn-glass:disabled{opacity:0.5;cursor:not-allowed;transform:none !important;}
+
+.btn-glass.btn-primary{
+  background:linear-gradient(135deg, rgba(0,180,255,0.3) 0%, rgba(0,150,220,0.15) 100%);
+  border-color:rgba(0,200,255,0.3);
+}
+.btn-glass.btn-primary:hover{
+  background:linear-gradient(135deg, rgba(0,180,255,0.4) 0%, rgba(0,150,220,0.25) 100%);
+  box-shadow:0 16px 48px rgba(0,180,255,0.25),
+             inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
+.btn-glass.btn-success{
+  background:linear-gradient(135deg, rgba(0,200,100,0.3) 0%, rgba(0,180,80,0.15) 100%);
+  border-color:rgba(0,255,136,0.3);
+}
+
+.btn-glass.btn-sm{padding:10px 16px;font-size:12px;border-radius:10px;}
+
+/* Labels */
+label,.text1{
+  display:block;font-size:13px;color:#7dd3fc;
+  margin-bottom:8px;font-weight:500;
+  letter-spacing:0.3px;
+}
+
+/* QR Code */
+.qr{margin:16px 0;}
+.qr img{
+  width:200px;max-width:100%;height:auto;
+  border-radius:16px;
+  border:2px solid rgba(0,212,255,0.15);
+  box-shadow:0 8px 32px rgba(0,0,0,0.3), 0 0 30px rgba(0,212,255,0.05);
+  background:#fff;padding:8px;
+}
+
+/* Video */
+.video{
+  max-width:100%;width:100%;height:auto;
+  margin:12px 0;border-radius:14px;
+  border:1px solid rgba(0,212,255,0.12);
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+
+/* Status */
+#status{
+  margin-top:12px;font-weight:600;font-size:13px;
+  color:#7fff9a;line-height:1.5;text-align:center;
+  padding:8px;border-radius:8px;
+}
+
+/* Key status box */
+#keyStatus{
+  display:none;margin:16px 0;padding:16px;
+  background:linear-gradient(135deg, rgba(0,200,100,0.15), rgba(0,180,80,0.08));
+  border:1px solid rgba(0,255,136,0.3);
+  border-radius:14px;color:#00ff99;font-size:14px;
+  box-shadow:0 0 30px rgba(0,255,136,0.08);
+}
+
+/* Coupon info */
+#couponInfo{font-size:12px;color:#ffaa00;margin:8px 0;line-height:1.4;}
+
+/* Code display */
+.code-display{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(0,212,255,0.1);
+  border:1px solid rgba(0,212,255,0.2);
+  border-radius:10px;padding:8px 16px;
+  font-family:'SF Mono',Consolas,monospace;
+  font-weight:700;font-size:16px;color:#00e5ff;
+  letter-spacing:1px;
+}
+
+/* Footer */
+.footer{
+  margin-top:16px;font-size:11px;color:#64748b;
+  text-align:center;padding:16px;
+  border-top:1px solid rgba(0,212,255,0.08);
+}
+.footer a{color:#00d4ff;text-decoration:none;}
+
+/* Flex utilities */
+.flex{display:flex;}
+.items-center{align-items:center;}
+.justify-between{justify-content:space-between;}
+.gap-2{gap:8px;}
+.gap-3{gap:12px;}
+.w-full{width:100%;}
+.mt-3{margin-top:12px;}
+.mb-2{margin-bottom:8px;}
 </style>
 </head>
 <body>
-<!-- SVG Filter for Liquid Glass Effect -->
-<svg xmlns="http://www.w3.org/2000/svg" role="presentation" style="display: none">
-  <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
-    <feTurbulence type="fractalNoise" baseFrequency="0.001 0.005" numOctaves="1" seed="17" result="turbulence"/>
-    <feComponentTransfer in="turbulence" result="mapped">
-      <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5" />
-      <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
-      <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
-    </feComponentTransfer>
-    <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
-    <feSpecularLighting in="softMap" surfaceScale="5" specularConstant="1" specularExponent="100" lighting-color="white" result="specLight">
-      <fePointLight x="-200" y="-200" z="300" />
-    </feSpecularLighting>
-    <feComposite in="specLight" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litImage" />
-    <feDisplacementMap in="SourceGraphic" in2="softMap" scale="200" xChannelSelector="R" yChannelSelector="G" />
-  </filter>
-</svg>
-<!-- SVG Filter for Liquid Glass Effect -->
+
 <div class="wrapper">
+  <!-- Terminal -->
   <div class="terminal">
-    <div class="terminal-header">>_ Terminal</div>
+    <div class="terminal-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="4 17 10 11 4 5"></polyline>
+        <line x1="12" y1="19" x2="20" y2="19"></line>
+      </svg>
+      Terminal
+    </div>
     <div class="terminal-body" id="terminal" aria-live="polite"></div>
   </div>
 
+  <!-- Main Card -->
   <div class="card">
-    <div class="card-header">💻 Mua key ngay</div>
+    <div class="card-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+        <line x1="8" y1="21" x2="16" y2="21"></line>
+        <line x1="12" y1="17" x2="12" y2="21"></line>
+      </svg>
+      Mua Key Ngay
+    </div>
     <div class="card-body">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+      <div class="flex items-center justify-between gap-2 mb-2">
         <label class="text1" for="duration" style="margin:0;flex:1;">Chọn thời hạn:</label>
-        <a href="https://tinyurl.com/2ataljdt" target="_blank" style="padding:8px 12px;background:rgba(255,255,255,0.1);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);color:#e5f6ff;font-weight:700;border-radius:8px;border:1.5px solid rgba(255,255,255,0.3);cursor:pointer;font-size:12px;text-decoration:none;white-space:nowrap;transition:all .3s cubic-bezier(0.34, 1.56, 0.64, 1);box-shadow:0 8px 32px rgba(0,200,255,0.12),inset 2px 2px 1px 0 rgba(255,255,255,0.5),inset -1px -1px 1px 1px rgba(255,255,255,0.5);position:relative;overflow:hidden;display:inline-block;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 48px rgba(0,200,255,0.18),inset 2px 2px 1px 0 rgba(255,255,255,0.6),inset -1px -1px 1px 1px rgba(255,255,255,0.6)'" onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.transform='translateY(0)';this.style.boxShadow='0 8px 32px rgba(0,200,255,0.12),inset 2px 2px 1px 0 rgba(255,255,255,0.5),inset -1px -1px 1px 1px rgba(255,255,255,0.5)'" onmousedown="this.style.background='rgba(255,255,255,0.2)';this.style.transform='translateY(-1px)';this.style.boxShadow='inset 0 2px 8px rgba(0,200,255,0.3),inset 0 -1px 4px rgba(0,0,0,0.1)'" onmouseup="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 48px rgba(0,200,255,0.18),inset 2px 2px 1px 0 rgba(255,255,255,0.6),inset -1px -1px 1px 1px rgba(255,255,255,0.6)'">📱Demo Menu</a>
+        <a href="https://tinyurl.com/2ataljdt" target="_blank" class="btn-glass btn-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          Demo
+        </a>
       </div>
+      
       <select id="duration">
         {% for d in durations %}
           {% if d.key_count > 0 %}
@@ -89,58 +279,119 @@ label{display:block;font-size:13px;color:#88faff;margin-bottom:6px;text-transfor
               {{ d.label }} — {{ "{:,}".format(d.amount) }} VND ({{ d.key_count }} key)
             </option>
           {% else %}
-            <option value="{{ d.value }}" data-amount="{{ d.amount }}" data-key-count="{{ d.key_count }}" data-label="{{ d.label }}" disabled style="color:#333;">
+            <option value="{{ d.value }}" data-amount="{{ d.amount }}" data-key-count="{{ d.key_count }}" data-label="{{ d.label }}" disabled style="color:#555;">
               {{ d.label }} — hết key
             </option>
           {% endif %}
         {% endfor %}
       </select>
 
-      <p class="text1">Nội dung: <b id="code">{{ code }}</b></p>
-      <div class="qr"><img id="qrImage" alt="VietQR"></div>
-
-      <input type="email" id="email" placeholder="Nhập email để nhận key 🔑">
-      
-      <div style="display:flex;gap:8px;width:92%;margin:6px auto;">
-        <input type="text" id="coupon" placeholder="Mã giảm giá (nếu có)" style="flex:1;">
-        <button id="testCouponBtn" style="width:auto;padding:8px 12px;">Xác Nhận</button>
+      <div class="mt-3 mb-2">
+        <label class="text1">Nội dung chuyển khoản:</label>
+        <div class="code-display">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span id="code">{{ code }}</span>
+        </div>
       </div>
-      <p id="couponInfo" style="font-size:12px;color:#ffaa00;margin:4px 0;"></p>
+
+      <div class="qr">
+        <img id="qrImage" alt="VietQR">
+      </div>
+
+      <input type="email" id="email" placeholder="📧 Nhập email để nhận key">
       
-      <p id="keyStatus" style="display:none;margin:12px 0;padding:12px;background:rgba(0,200,100,0.15);border:1px solid rgba(0,200,100,0.4);border-radius:6px;color:#00cc66;font-size:13px;">
-        <b>✅ Key của bạn:</b><br>
-        <span id="receivedKey" style="font-family:monospace;font-weight:bold;word-break:break-all;"></span>
-      </p>
+      <div class="flex gap-2 mt-3">
+        <input type="text" id="coupon" placeholder="Mã giảm giá (nếu có)" style="flex:1;">
+        <button id="testCouponBtn" class="btn-glass btn-sm" style="white-space:nowrap;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Xác nhận
+        </button>
+      </div>
+      <p id="couponInfo"></p>
       
-      <br>
-      <button id="checkBtn">Nhận Key</button>
+      <div id="keyStatus">
+        <div class="flex items-center gap-2 mb-2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00ff99" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M8 12l3 3 5-6"></path>
+          </svg>
+          <strong>Key của bạn:</strong>
+        </div>
+        <span id="receivedKey" style="font-family:monospace;font-weight:bold;word-break:break-all;font-size:15px;"></span>
+      </div>
+      
+      <button id="checkBtn" class="btn-glass btn-primary w-full mt-3">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+        </svg>
+        Nhận Key
+      </button>
       <p id="status"></p>
     </div>
   </div>
 
+  <!-- Guide Card -->
   <div class="card">
-    <div class="card-header">📗 Hướng dẫn</div>
+    <div class="card-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+      </svg>
+      Hướng Dẫn
+    </div>
     <div class="card-body">
-        <video class="video" controls autoplay>
-          <source src="https://github.com/WeansHHN/me/raw/refs/heads/main/support.mp4" type="video/mp4">
-          Trình duyệt của bạn không hỗ trợ video.
-        </video>
+      <video class="video" controls autoplay muted playsinline>
+        <source src="https://github.com/WeansHHN/me/raw/refs/heads/main/support.mp4" type="video/mp4">
+        Trình duyệt của bạn không hỗ trợ video.
+      </video>
 
-        <p>- Ae lưu ý xem kỹ video, tránh bị sai sót!</p>
-        <p>- Bất kì thắc mắc nào ib <a href="https://zalo.me/0979110280" target="_blank" style="color:#00eaff; text-decoration:none;">Zalo</a> hoặc <a href="https://t.me/nguyenduc666" target="_blank" style="color:#00eaff; text-decoration:none;">Telegram</a></p>
+      <div style="text-align:left;margin-top:16px;font-size:13px;color:#94a3b8;line-height:1.7;">
+        <div class="flex items-center gap-2 mb-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span style="color:#fbbf24;font-weight:600;">Lưu ý xem kỹ video!</span>
+        </div>
+        <p style="margin-bottom:12px;">Bất kì thắc mắc nào liên hệ:</p>
+        <div class="flex gap-2">
+          <a href="https://zalo.me/0979110280" target="_blank" class="btn-glass btn-sm" style="flex:1;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
+            Zalo
+          </a>
+          <a href="https://t.me/nguyenduc666" target="_blank" class="btn-glass btn-sm" style="flex:1;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            Telegram
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="footer">© 2026 <span style="color:#00eaff;">Muakey.pro</span> | By <b>tuiducios.xyz</b></div><br>
+  <div class="footer">
+    © 2026 <a href="#">Muakey.cloud</a> | By <strong>tuiducios.xyz</strong>
+  </div>
 </div>
 
 <script>
 const terminalEl = document.getElementById('terminal');
 const lines = [
-  ":3 ❤️‍🔥 🇻🇳",
+  "Welcome to 666CHEAT Store 🎮",
   "Chào mừng bạn đến với Cheat AOV Store",
-  "Nếu bạn là người mới, hãy kéo xuống phần hướng dẫn để tìm hiểu nhé!!",
-  "Còn nếu bạn là khách quen, cảm ơn bạn đã ủng hộ:3",
+  "Xem hướng dẫn bên dưới nếu bạn là người mới!",
+  "Cảm ơn bạn đã ủng hộ ❤️",
   "666CHEAT With Love <3"
 ];
 let lineIndex=0, charIndex=0, currentLine='';
@@ -152,11 +403,11 @@ function typeTick(){
     currentLine+=line[charIndex++];
     renderTerminal(currentLine+'▌');
     terminalEl.scrollTop=terminalEl.scrollHeight;
-    setTimeout(typeTick,30+Math.random()*40);
+    setTimeout(typeTick,25+Math.random()*35);
   }else{
     appendLine(currentLine);
     currentLine=''; charIndex=0; lineIndex++;
-    setTimeout(typeTick,400);
+    setTimeout(typeTick,350);
   }
 }
 
@@ -185,7 +436,7 @@ function appendLine(text){
   terminalEl.scrollTop=terminalEl.scrollHeight;
 }
 
-setTimeout(typeTick,500);
+setTimeout(typeTick,400);
 
 const uid="{{ uid }}";
 const code="{{ code }}";
@@ -195,10 +446,8 @@ const statusEl=document.getElementById('status');
 const couponInput=document.getElementById('coupon');
 const couponInfoEl=document.getElementById('couponInfo');
 const testCouponBtn=document.getElementById('testCouponBtn');
-
-// Phần tử để hiển thị thông tin giảm giá (nếu cần)
 const promoInfoEl = { innerText: '' };
-let appliedDiscount = 0; // Lưu % giảm giá đã áp dụng
+let appliedDiscount = 0;
 
 function updateDurationDisplay(){
   const selected=durationSelect.options[durationSelect.selectedIndex];
@@ -206,7 +455,7 @@ function updateDurationDisplay(){
   let discountedAmount=originalAmount-(originalAmount*appliedDiscount/100);
   
   if(appliedDiscount > 0){
-    selected.text=selected.getAttribute("data-label")+" — "+discountedAmount.toLocaleString()+" VND ("+selected.getAttribute("data-key-count")+" key) [Đã áp giảm "+appliedDiscount+"%]";
+    selected.text=selected.getAttribute("data-label")+" — "+discountedAmount.toLocaleString()+" VND ("+selected.getAttribute("data-key-count")+" key) [-"+appliedDiscount+"%]";
   }else{
     selected.text=selected.getAttribute("data-label")+" — "+originalAmount.toLocaleString()+" VND ("+selected.getAttribute("data-key-count")+" key)";
   }
@@ -223,21 +472,24 @@ function updateQR(amount){
 updateQR();
 durationSelect.addEventListener('change',()=>{
   updateQR();
-  updateDurationDisplay(); // Cập nhật giá khi thay đổi thời hạn
+  updateDurationDisplay();
 });
 
 function startCooldown(sec){
   let time=sec;
   btn.disabled=true;
-  btn.innerText=`Chờ ${time}s...`;
+  btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Chờ ${time}s...`;
   const timer=setInterval(()=>{
     time--;
-    if(time<=0){ clearInterval(timer); btn.disabled=false; btn.innerText="Nhận Key"; }
-    else btn.innerText=`Chờ ${time}s...`;
+    if(time<=0){ 
+      clearInterval(timer); 
+      btn.disabled=false; 
+      btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Nhận Key`; 
+    }
+    else btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Chờ ${time}s...`;
   },1000);
 }
 
-// Test coupon button
 testCouponBtn.addEventListener('click',async ()=>{
   const couponCode=couponInput.value.trim().toUpperCase();
   const selected=durationSelect.options[durationSelect.selectedIndex];
@@ -245,13 +497,14 @@ testCouponBtn.addEventListener('click',async ()=>{
 
   if(!couponCode){
     couponInfoEl.innerText="❌ Nhập mã giảm giá!";
-    couponInfoEl.style.color="#ff5555";
+    couponInfoEl.style.color="#ef4444";
     return;
   }
 
   testCouponBtn.disabled=true;
-  testCouponBtn.innerText="Đang kiểm tra...";
+  testCouponBtn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin"><circle cx="12" cy="12" r="10"></circle></svg> Đang kiểm tra...`;
   couponInfoEl.innerText="🔍 Đang kiểm tra...";
+  couponInfoEl.style.color="#94a3b8";
 
   try{
     const res=await fetch("/check_coupon",{
@@ -264,27 +517,26 @@ testCouponBtn.addEventListener('click',async ()=>{
     if(data.status==="ok"){
       const c=data.coupon||{};
       const discount=c.discount||0;
-      appliedDiscount=discount; // Lưu discount đã áp dụng
+      appliedDiscount=discount;
       const selected=durationSelect.options[durationSelect.selectedIndex];
       let originalAmount=parseInt(selected.getAttribute("data-amount").replace(/,/g, ""));
       let discountedAmount=originalAmount-(originalAmount*discount/100);
-      couponInfoEl.innerText=`✅ Mã hợp lệ! Giảm ${discount}% | Còn ${c.uses_left} lượt | Hết hạn: ${c.expires_at||'Không giới hạn'} | Số tiền sau khi giảm: ${discountedAmount.toLocaleString()}đ`;
-      couponInfoEl.style.color="#66ff99";
-      updateDurationDisplay(); // Cập nhật giá trên dropdown
-      // Tự động cập nhật QR sau khi xác nhận coupon
+      couponInfoEl.innerHTML=`✅ Mã hợp lệ! Giảm <strong>${discount}%</strong> | Còn ${c.uses_left} lượt | Thanh toán: <strong>${discountedAmount.toLocaleString()}đ</strong>`;
+      couponInfoEl.style.color="#22c55e";
+      updateDurationDisplay();
       updateQR(discountedAmount);
     }else{
       couponInfoEl.innerText=`❌ ${data.message||'Mã không hợp lệ'}`;
-      couponInfoEl.style.color="#ff5555";
+      couponInfoEl.style.color="#ef4444";
     }
   }catch(e){
     couponInfoEl.innerText="❌ Lỗi kết nối!";
-    couponInfoEl.style.color="#ff5555";
+    couponInfoEl.style.color="#ef4444";
     console.error(e);
   }
 
   testCouponBtn.disabled=false;
-  testCouponBtn.innerText="Xác Nhận";
+  testCouponBtn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Xác nhận`;
 });
 
 btn.addEventListener('click',async ()=>{
@@ -293,15 +545,17 @@ btn.addEventListener('click',async ()=>{
   const selected=durationSelect.options[durationSelect.selectedIndex];
   const period=selected.value;
   const amount=parseInt(selected.getAttribute("data-amount").replace(/,/g, ""));
-  
-  // KHÔNG tính discount ở đây! Backend sẽ tính
 
-  if(!email){ alert("⚠️ Nhập email trước!"); return; }
+  if(!email){ 
+    statusEl.innerText="⚠️ Vui lòng nhập email!"; 
+    statusEl.style.color="#fbbf24";
+    return; 
+  }
 
   btn.disabled=true;
-  btn.innerText="Đang kiểm tra...";
+  btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Đang kiểm tra...`;
   statusEl.innerText="🔍 Đang xác minh thanh toán...";
-  promoInfoEl.innerText="";
+  statusEl.style.color="#94a3b8";
 
   try{
     const res=await fetch("/check_mb_payment",{
@@ -317,131 +571,30 @@ btn.addEventListener('click',async ()=>{
       const finalAmount=d.final_amount||amount;
       const receivedKey=d.key||"N/A";
 
-      statusEl.innerText=`Số tiền: ${finalAmount.toLocaleString()}đ`;
+      statusEl.innerText=`✅ Thanh toán thành công! Số tiền: ${finalAmount.toLocaleString()}đ`;
+      statusEl.style.color="#22c55e";
 
       updateQR(finalAmount);
       
-      // Hiển thị key ở ô riêng, KHÔNG thay đổi mã nội dung
       const keyStatusEl=document.getElementById('keyStatus');
       const receivedKeyEl=document.getElementById('receivedKey');
       receivedKeyEl.innerText=receivedKey;
       keyStatusEl.style.display='block';
 
-      statusEl.innerText+="\n✅ Thành công! Trang sẽ reload sau 3s...";
+      statusEl.innerText+="\n🔄 Trang sẽ reload sau 3s...";
       setTimeout(()=>location.reload(),3000);
     }else{
       statusEl.innerText=data.message||"❌ Lỗi!";
+      statusEl.style.color="#ef4444";
     }
   }catch(e){
     statusEl.innerText="❌ Lỗi kết nối server!";
+    statusEl.style.color="#ef4444";
     console.error(e);
   }
 
   startCooldown(35);
 });
-
-// // ========== Pagination Controls ==========
-// let currentPage = 1;
-// const paginationContent = [
-//   {
-//     title: "Trang 1 - Mua Key",
-//     description: "Chọn gói key phù hợp với nhu cầu của bạn"
-//   },
-//   {
-//     title: "Trang 2 - Hướng dẫn chi tiết",
-//     description: "Cách sử dụng key và các lưu ý quan trọng"
-//   },
-//   {
-//     title: "Trang 3 - Hỗ trợ và FAQ",
-//     description: "Các câu hỏi thường gặp và liên hệ hỗ trợ"
-//   }
-// ];
-
-// const backBtn = document.getElementById('backBtn');
-// const nextBtn = document.getElementById('nextBtn');
-// const pageInfo = document.getElementById('pageInfo');
-
-// function updatePaginationUI() {
-//   pageInfo.innerText = `Trang ${currentPage}/${paginationContent.length}`;
-//   backBtn.disabled = currentPage === 1;
-//   nextBtn.disabled = currentPage === paginationContent.length;
-// }
-
-// backBtn.addEventListener('click', () => {
-//   if (currentPage > 1) {
-//     currentPage--;
-//     updatePaginationUI();
-//     showPageContent();
-//     window.scrollTo({ top: 0, behavior: 'smooth' });
-//   }
-// });
-
-// nextBtn.addEventListener('click', () => {
-//   if (currentPage < paginationContent.length) {
-//     currentPage++;
-//     updatePaginationUI();
-//     showPageContent();
-//     window.scrollTo({ top: 0, behavior: 'smooth' });
-//   }
-// });
-
-// function showPageContent() {
-//   const cardHeader = document.querySelector('.card:nth-child(2) .card-header');
-//   const cardBody = document.querySelector('.card:nth-child(2) .card-body');
-  
-//   if (currentPage === 1) {
-//     cardHeader.innerText = '💻 Mua key ngay';
-//     // Reset to original content
-//     location.reload();
-//   } else if (currentPage === 2) {
-//     cardHeader.innerText = '📘 Hướng dẫn sử dụng';
-//     cardBody.innerHTML = `
-//       <div style="text-align:left;font-size:13px;line-height:1.6;color:#bffcff;">
-//         <h3 style="color:#00eaff;margin-bottom:10px;">📖 Cách sử dụng key AOV:</h3>
-//         <ol style="margin-left:20px;">
-//           <li>Mở ứng dụng AOV trên điện thoại</li>
-//           <li>Truy cập phần "Cửa hàng" hoặc "Shop"</li>
-//           <li>Chọn "Nạp Key" hoặc "Redeem Code"</li>
-//           <li>Paste mã key vừa nhận vào</li>
-//           <li>Nhấn "Xác nhận" để nhận quà</li>
-//         </ol>
-//         <h3 style="color:#00eaff;margin:15px 0 10px;">⚠️ Lưu ý quan trọng:</h3>
-//         <ul style="margin-left:20px;">
-//           <li>Mỗi key chỉ sử dụng được 1 lần duy nhất</li>
-//           <li>Key hết hạn sau thời gian quy định</li>
-//           <li>Không hoàn tiền nếu nhập sai key</li>
-//           <li>Giữ kín key của bạn, tránh chia sẻ</li>
-//         </ul>
-//       </div>
-//     `;
-//   } else if (currentPage === 3) {
-//     cardHeader.innerText = '❓ FAQ & Hỗ trợ';
-//     cardBody.innerHTML = `
-//       <div style="text-align:left;font-size:13px;line-height:1.6;color:#bffcff;">
-//         <h3 style="color:#00eaff;margin-bottom:10px;">❓ Các câu hỏi thường gặp:</h3>
-//         <div style="margin-bottom:12px;">
-//           <strong style="color:#00ff99;">Q: Key hết hạn sau bao lâu?</strong><br>
-//           A: Tùy vào gói bạn mua (1 ngày, 7 ngày, 1 tháng, 3 tháng)
-//         </div>
-//         <div style="margin-bottom:12px;">
-//           <strong style="color:#00ff99;">Q: Tôi nhập sai key, phải làm sao?</strong><br>
-//           A: Liên hệ hỗ trợ sớm nhất để được giúp đỡ
-//         </div>
-//         <div style="margin-bottom:12px;">
-//           <strong style="color:#00ff99;">Q: Có cách nào rẻ hơn không?</strong><br>
-//           A: Sử dụng mã giảm giá nếu bạn có
-//         </div>
-//         <h3 style="color:#00eaff;margin:15px 0 10px;">📞 Liên hệ hỗ trợ:</h3>
-//         <p>Zalo: <a href="https://zalo.me/0375053471" target="_blank" style="color:#00eaff;text-decoration:none;">0375053471</a></p>
-//         <p>Telegram: <a href="https://t.me/vaicaunoicokhiennguoithay_doi" target="_blank" style="color:#00eaff;text-decoration:none;">@SupportTeam</a></p>
-//       </div>
-//     `;
-//   }
-// }
-
-// // Initialize pagination UI
-// updatePaginationUI();
-
 </script>
 </body>
 </html>
