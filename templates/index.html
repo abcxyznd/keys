@@ -123,57 +123,49 @@ body::after{
 
 /* Liquid Glass Buttons */
 .btn-glass{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  padding:14px 24px;
-  background:linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,0.2);
-  border-radius:14px;
-  color:#ffffff;font-weight:600;font-size:14px;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:12px 20px;
+  background:linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:10px;
+  color:#ffffff;font-weight:600;font-size:13px;
   cursor:pointer;
-  transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow:0 8px 32px rgba(0,180,255,0.12),
-             inset 0 1px 0 rgba(255,255,255,0.3),
-             inset 0 -1px 0 rgba(255,255,255,0.1);
-  position:relative;overflow:hidden;
+  transition:all 0.25s ease;
+  box-shadow:0 4px 16px rgba(0,180,255,0.08),
+             inset 0 1px 0 rgba(255,255,255,0.2);
   text-decoration:none;
 }
-.btn-glass::before{
-  content:"";position:absolute;top:0;left:-100%;
-  width:100%;height:100%;
-  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition:left 0.5s ease;
-}
-.btn-glass:hover::before{left:100%;}
 .btn-glass:hover{
-  transform:translateY(-3px);
-  background:linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%);
-  box-shadow:0 16px 48px rgba(0,180,255,0.2),
-             inset 0 1px 0 rgba(255,255,255,0.4),
-             inset 0 -1px 0 rgba(255,255,255,0.15);
+  transform:translateY(-2px);
+  background:linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%);
+  box-shadow:0 8px 24px rgba(0,180,255,0.15),
+             inset 0 1px 0 rgba(255,255,255,0.3);
+  border-color:rgba(255,255,255,0.25);
 }
 .btn-glass:active{
-  transform:translateY(-1px);
-  background:linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+  transform:translateY(0);
 }
 .btn-glass:disabled{opacity:0.5;cursor:not-allowed;transform:none !important;}
 
 .btn-glass.btn-primary{
-  background:linear-gradient(135deg, rgba(0,180,255,0.3) 0%, rgba(0,150,220,0.15) 100%);
+  background:linear-gradient(135deg, rgba(0,180,255,0.25) 0%, rgba(0,150,220,0.12) 100%);
   border-color:rgba(0,200,255,0.3);
 }
 .btn-glass.btn-primary:hover{
-  background:linear-gradient(135deg, rgba(0,180,255,0.4) 0%, rgba(0,150,220,0.25) 100%);
-  box-shadow:0 16px 48px rgba(0,180,255,0.25),
-             inset 0 1px 0 rgba(255,255,255,0.4);
+  background:linear-gradient(135deg, rgba(0,180,255,0.35) 0%, rgba(0,150,220,0.2) 100%);
+  box-shadow:0 8px 24px rgba(0,180,255,0.2);
 }
 
 .btn-glass.btn-success{
-  background:linear-gradient(135deg, rgba(0,200,100,0.3) 0%, rgba(0,180,80,0.15) 100%);
+  background:linear-gradient(135deg, rgba(0,200,100,0.25) 0%, rgba(0,180,80,0.12) 100%);
   border-color:rgba(0,255,136,0.3);
 }
+.btn-glass.btn-success:hover{
+  background:linear-gradient(135deg, rgba(0,200,100,0.35) 0%, rgba(0,180,80,0.2) 100%);
+}
 
-.btn-glass.btn-sm{padding:10px 16px;font-size:12px;border-radius:10px;}
+.btn-glass.btn-sm{padding:8px 12px;font-size:12px;border-radius:8px;}
 
 /* Labels */
 label,.text1{
@@ -221,14 +213,37 @@ label,.text1{
 
 /* Code display */
 .code-display{
-  display:inline-flex;align-items:center;gap:10px;
-  background:rgba(0,212,255,0.08);
-  border:1px solid rgba(0,212,255,0.2);
-  border-radius:10px;padding:10px 14px;
+  display:inline-flex;align-items:center;justify-content:space-between;
+  gap:8px;
+  background:linear-gradient(135deg, rgba(0,212,255,0.1), rgba(0,180,255,0.05));
+  border:1px solid rgba(0,212,255,0.25);
+  border-radius:8px;padding:8px 12px;
   font-family:'SF Mono',Consolas,monospace;
-  font-weight:700;font-size:15px;color:#00e5ff;
-  letter-spacing:0.5px;
+  font-weight:600;font-size:14px;color:#00e5ff;
+  letter-spacing:0.3px;
   width:100%;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,0.1);
+}
+.code-display svg:first-child{
+  width:14px;height:14px;flex-shrink:0;opacity:0.7;
+}
+.code-display span{
+  flex:1;text-align:center;font-weight:700;
+}
+.btn-icon{
+  padding:6px !important;border-radius:6px !important;
+  min-width:auto !important;gap:0 !important;
+  background:rgba(255,255,255,0.08) !important;
+  border:1px solid rgba(255,255,255,0.15) !important;
+  box-shadow:none !important;
+}
+.btn-icon:hover{
+  background:rgba(255,255,255,0.15) !important;
+  transform:scale(1.05) !important;
+  box-shadow:0 2px 8px rgba(0,180,255,0.15) !important;
+}
+.btn-icon svg{
+  width:14px;height:14px;
 }
 
 /* Footer */
@@ -301,7 +316,7 @@ label,.text1{
       </select>
 
       <div class="mt-3 mb-2">
-        <label class="text1">Nội dung chuyển khoản:</label>
+        <label class="text1" style="font-size:12px;margin-bottom:6px;">Nội dung CK:</label>
         <div class="code-display" id="codeDisplay">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -325,11 +340,11 @@ label,.text1{
       
       <div class="flex gap-2 mt-3">
         <input type="text" id="coupon" placeholder="Mã giảm giá (nếu có)" style="flex:1;">
-        <button id="testCouponBtn" class="btn-glass btn-sm" style="white-space:nowrap;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <button id="testCouponBtn" class="btn-glass btn-sm" style="white-space:nowrap;padding:10px 14px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          Xác nhận
+          Kiểm tra
         </button>
       </div>
       <p id="couponInfo"></p>
