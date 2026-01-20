@@ -604,14 +604,14 @@ def start(message):
     markup.add("/themcoupon", "/xoacoupon", "/couponhienco")
     markup.add("/xemgia", "/chinhgia")
     markup.add("/rutgonlink", "/showshortenurl")
-    markup.add("/synckeys")
+    markup.add("/syncdata")
     bot.send_message(message.chat.id, 
                     "👋 Chào mừng!\n\n"
                     "<b>📋 Key Management:</b>\n"
                     "/xemkey - Xem key chưa bán\n"
                     "/themkey - Thêm key mới\n"
                     "/xoakey - Xóa key\n"
-                    "/synckeys - Đồng bộ keys từ GitHub\n\n"
+                    "/syncdata - Đồng bộ data từ GitHub\n\n"
                     "<b>🎟️ Coupon Management:</b>\n"
                     "/themcoupon - Thêm mã giảm giá\n"
                     "/xoacoupon - Xóa mã giảm giá\n"
@@ -641,128 +641,105 @@ def xem_key(message):
     count_30d = len(get_keys_by_type("1 Tháng"))
     count_90d = len(get_keys_by_type("1 Mùa"))
     
-    markup = types.InlineKeyboardMarkup(row_width=2)
+    markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     markup.add(
-        types.InlineKeyboardButton(f"1 Ngày ({count_1d})", callback_data="view_keys_1 Ngày"),
-        types.InlineKeyboardButton(f"1 Tuần ({count_7d})", callback_data="view_keys_1 Tuần"),
-        types.InlineKeyboardButton(f"1 Tháng ({count_30d})", callback_data="view_keys_1 Tháng"),
-        types.InlineKeyboardButton(f"1 Mùa ({count_90d})", callback_data="view_keys_1 Mùa")
+        f"1 Ngày ({count_1d})",
+        f"1 Tuần ({count_7d})",
+        f"1 Tháng ({count_30d})",
+        f"1 Mùa ({count_90d})"
     )
     
     bot.send_message(chat_id, "🔑 <b>Chọn loại key:</b>", reply_markup=markup, parse_mode="HTML")
+    user_states[chat_id] = {"step": "waiting_view_key_type"}
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("view_keys_"))
-def view_keys_callback(call):
+@bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "waiting_view_key_type")
+def view_keys_callback(message):
     """Show keys for selected period"""
     try:
-        period_label = call.data.replace("view_keys_", "")
+        chat_id = message.chat.id
+        text = message.text.strip()
         
-        chat_id = call.message.chat.id
+        # Extract period label from button text (e.g., "1 Ngày (5)" -> "1 Ngày")
+        import re
+        match = re.match(r"^(.+?)\s*\(", text)
+        if match:
+            period_label = match.group(1).strip()
+        else:
+            period_label = text
+        
         msg_text, total_pages = format_keys_by_period(period_label, page=0)
         
-        markup = types.InlineKeyboardMarkup()
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         if total_pages > 1:
+            markup.add("➡️ Trang kế tiếp")
+        markup.add("🔙 Quay lại")
+        
+        user_states[chat_id] = {"step": "viewing_keys", "period_label": period_label, "page": 0, "total_pages": total_pages}
+        bot.send_message(chat_id, msg_text, reply_markup=markup, parse_mode="HTML")
+    except Exception as e:
+        print(f"[VIEW KEYS ERROR] {e}")
+        bot.send_message(chat_id, "❌ Lỗi!", reply_markup=types.ReplyKeyboardRemove())
+        if chat_id in user_states:
+            del user_states[chat_id]
+
+@bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "viewing_keys")
+def key_navigation_handler(message):
+    """Handle key viewing navigation"""
+    try:
+        chat_id = message.chat.id
+        text = message.text.strip()
+        state = user_states.get(chat_id, {})
+        period_label = state.get("period_label")
+        page = state.get("page", 0)
+        total_pages = state.get("total_pages", 1)
+        
+        if text == "➡️ Trang kế tiếp":
+            page = min(page + 1, total_pages - 1)
+        elif text == "⬅️ Trang trước":
+            page = max(page - 1, 0)
+        elif text == "🔙 Quay lại":
+            # Go back to key type selection
+            count_1d = len(get_keys_by_type("1 Ngày"))
+            count_7d = len(get_keys_by_type("1 Tuần"))
+            count_30d = len(get_keys_by_type("1 Tháng"))
+            count_90d = len(get_keys_by_type("1 Mùa"))
+            
+            markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
             markup.add(
-                types.InlineKeyboardButton("➡️ Trang kế tiếp", callback_data=f"key_next_{period_label}_1")
+                f"1 Ngày ({count_1d})",
+                f"1 Tuần ({count_7d})",
+                f"1 Tháng ({count_30d})",
+                f"1 Mùa ({count_90d})"
             )
+            
+            user_states[chat_id] = {"step": "waiting_view_key_type"}
+            bot.send_message(chat_id, "🔑 <b>Chọn loại key:</b>", reply_markup=markup, parse_mode="HTML")
+            return
+        else:
+            return
         
-        markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="back_to_key_types"))
-        
-        bot.edit_message_text(msg_text, chat_id, call.message.message_id, 
-                             reply_markup=markup, parse_mode="HTML")
-        bot.answer_callback_query(call.id)
-    except Exception as e:
-        print(f"[CALLBACK ERROR] {e}")
-        bot.answer_callback_query(call.id, "❌ Lỗi!", show_alert=True)
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith("key_next_"))
-def key_next_callback(call):
-    """Next page for keys"""
-    try:
-        # Format: key_next_1 Ngày_1
-        parts = call.data.replace("key_next_", "").rsplit("_", 1)
-        period_label = parts[0]
-        page = int(parts[-1])
-        
-        chat_id = call.message.chat.id
         msg_text, total_pages = format_keys_by_period(period_label, page=page)
         
-        markup = types.InlineKeyboardMarkup()
-        nav_row = []
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        nav_buttons = []
         if page > 0:
-            nav_row.append(types.InlineKeyboardButton("⬅️ Trang trước", callback_data=f"key_prev_{period_label}_{page-1}"))
+            nav_buttons.append("⬅️ Trang trước")
         if page < total_pages - 1:
-            nav_row.append(types.InlineKeyboardButton("➡️ Trang kế tiếp", callback_data=f"key_next_{period_label}_{page+1}"))
+            nav_buttons.append("➡️ Trang kế tiếp")
         
-        if nav_row:
-            markup.row(*nav_row)
+        if nav_buttons:
+            markup.row(*nav_buttons)
+        markup.add("🔙 Quay lại")
         
-        markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="back_to_key_types"))
-        
-        bot.edit_message_text(msg_text, chat_id, call.message.message_id, 
-                             reply_markup=markup, parse_mode="HTML")
-        bot.answer_callback_query(call.id)
+        user_states[chat_id].update({"page": page, "total_pages": total_pages})
+        bot.send_message(chat_id, msg_text, reply_markup=markup, parse_mode="HTML")
     except Exception as e:
-        print(f"[CALLBACK ERROR] {e}")
-        bot.answer_callback_query(call.id, "❌ Lỗi!", show_alert=True)
+        print(f"[KEY NAV ERROR] {e}")
+        bot.send_message(chat_id, "❌ Lỗi!", reply_markup=types.ReplyKeyboardRemove())
+        if chat_id in user_states:
+            del user_states[chat_id]
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("key_prev_"))
-def key_prev_callback(call):
-    """Previous page for keys"""
-    try:
-        # Format: key_prev_1 Ngày_1
-        parts = call.data.replace("key_prev_", "").rsplit("_", 1)
-        period_label = parts[0]
-        page = int(parts[-1])
-        
-        chat_id = call.message.chat.id
-        msg_text, total_pages = format_keys_by_period(period_label, page=page)
-        
-        markup = types.InlineKeyboardMarkup()
-        nav_row = []
-        if page > 0:
-            nav_row.append(types.InlineKeyboardButton("⬅️ Trang trước", callback_data=f"key_prev_{period_label}_{page-1}"))
-        if page < total_pages - 1:
-            nav_row.append(types.InlineKeyboardButton("➡️ Trang kế tiếp", callback_data=f"key_next_{period_label}_{page+1}"))
-        
-        if nav_row:
-            markup.row(*nav_row)
-        
-        markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="back_to_key_types"))
-        
-        bot.edit_message_text(msg_text, chat_id, call.message.message_id, 
-                             reply_markup=markup, parse_mode="HTML")
-        bot.answer_callback_query(call.id)
-    except Exception as e:
-        print(f"[CALLBACK ERROR] {e}")
-        bot.answer_callback_query(call.id, "❌ Lỗi!", show_alert=True)
-
-@bot.callback_query_handler(func=lambda call: call.data == "back_to_key_types")
-def back_to_key_types(call):
-    """Back to key type selection"""
-    try:
-        chat_id = call.message.chat.id
-        
-        # Get key counts
-        count_1d = len(get_keys_by_type("1 Ngày"))
-        count_7d = len(get_keys_by_type("1 Tuần"))
-        count_30d = len(get_keys_by_type("1 Tháng"))
-        count_90d = len(get_keys_by_type("1 Mùa"))
-        
-        markup = types.InlineKeyboardMarkup(row_width=2)
-        markup.add(
-            types.InlineKeyboardButton(f"1 Ngày ({count_1d})", callback_data="view_keys_1 Ngày"),
-            types.InlineKeyboardButton(f"1 Tuần ({count_7d})", callback_data="view_keys_1 Tuần"),
-            types.InlineKeyboardButton(f"1 Tháng ({count_30d})", callback_data="view_keys_1 Tháng"),
-            types.InlineKeyboardButton(f"1 Mùa ({count_90d})", callback_data="view_keys_1 Mùa")
-        )
-        
-        bot.edit_message_text("🔑 <b>Chọn loại key:</b>", chat_id, call.message.message_id, 
-                             reply_markup=markup, parse_mode="HTML")
-        bot.answer_callback_query(call.id)
-    except Exception as e:
-        print(f"[CALLBACK ERROR] {e}")
-        bot.answer_callback_query(call.id, "❌ Lỗi!", show_alert=True)
+# Old callback handlers removed - now using ReplyKeyboardMarkup
 
 @bot.message_handler(commands=['themkey'])
 def them_key(message):
@@ -1140,26 +1117,33 @@ def process_coupon_types(message):
         
         user_states[chat_id]["selected_types"] = selected
         
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("✅ Hoàn thành", callback_data="coupon_done"))
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("✅ Hoàn thành")
         
         msg = f"Đã chọn: {', '.join(selected)}\n\nChọn thêm hoặc nhấn ✅ Hoàn thành:"
         bot.send_message(chat_id, msg, reply_markup=markup)
+        user_states[chat_id]["step"] = "waiting_coupon_done"
 
-@bot.callback_query_handler(func=lambda call: call.data == "coupon_done")
-def coupon_done_callback(call):
+@bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "waiting_coupon_done")
+def coupon_done_handler(message):
     """Finish coupon type selection"""
-    chat_id = call.message.chat.id
+    chat_id = message.chat.id
+    text = message.text.strip()
+    
+    if text != "✅ Hoàn thành":
+        # Allow re-selection of types
+        process_coupon_types(message)
+        return
+    
     selected_types = user_states.get(chat_id, {}).get("selected_types", [])
     
     if not selected_types:
-        bot.answer_callback_query(call.id, "❌ Chọn ít nhất 1 loại!", show_alert=True)
+        bot.send_message(chat_id, "❌ Chọn ít nhất 1 loại!")
         return
     
     user_states[chat_id]["types"] = selected_types
-    bot.edit_message_text("✅ Hoàn thành lựa chọn", chat_id, call.message.message_id)
-    save_new_coupon(call.message, chat_id)
-    bot.answer_callback_query(call.id)
+    bot.send_message(chat_id, "✅ Hoàn thành lựa chọn", reply_markup=types.ReplyKeyboardRemove())
+    save_new_coupon(message, chat_id)
 
 @bot.message_handler(commands=['xoacoupon'])
 def xoa_coupon(message):
@@ -1219,28 +1203,35 @@ def rut_gon_link(message):
     """Shorten link using tinyurl or is.gd API"""
     chat_id = message.chat.id
     # Ask user to choose service
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        types.InlineKeyboardButton("TinyURL", callback_data="choose_service_tinyurl"),
-        types.InlineKeyboardButton("is.gd", callback_data="choose_service_isgd")
-    )
+    markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    markup.add("TinyURL", "is.gd")
     bot.send_message(chat_id, "🔗 <b>Chọn dịch vụ rút gọn link:</b>", reply_markup=markup, parse_mode="HTML")
+    user_states[chat_id] = {"step": "waiting_service_choice"}
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("choose_service_"))
-def choose_service(call):
+@bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "waiting_service_choice")
+def choose_service(message):
     """Handle service selection"""
-    chat_id = call.message.chat.id
-    service = call.data.replace("choose_service_", "")
+    chat_id = message.chat.id
+    service_text = message.text.strip()
+    
+    if service_text == "TinyURL":
+        service = "tinyurl"
+    elif service_text == "is.gd":
+        service = "isgd"
+    else:
+        bot.send_message(chat_id, "❌ Vui lòng chọn TinyURL hoặc is.gd!")
+        return
+    
     user_states[chat_id] = {"step": "waiting_link_to_shorten", "service": service}
     
     if service == "tinyurl":
         # Ask if user wants custom alias for tinyurl
-        markup = types.ReplyKeyboardMarkup(row_width=2)
-        markup.add("Có (có alias)", "Không (không alias)")
+        markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+        markup.add("Có", "Không (không dùng alias)")
         bot.send_message(chat_id, "🔗 Bạn có muốn tùy chọn alias cho TinyURL không?", reply_markup=markup)
         user_states[chat_id]["step"] = "waiting_alias_choice"
     else:
-        bot.send_message(chat_id, "🔗 Nhập link cần rút gọn:")
+        bot.send_message(chat_id, "🔗 Nhập link cần rút gọn:", reply_markup=types.ReplyKeyboardRemove())
 
 @bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "waiting_alias_choice")
 def process_alias_choice(message):
@@ -1248,11 +1239,11 @@ def process_alias_choice(message):
     chat_id = message.chat.id
     choice = message.text.strip()
     
-    if choice == "Có (có alias)":
+    if choice == "Có":
         user_states[chat_id]["step"] = "waiting_link_to_shorten"
         user_states[chat_id]["use_alias"] = True
         bot.send_message(chat_id, "🔗 Nhập link cần rút gọn:", reply_markup=types.ReplyKeyboardRemove())
-    elif choice == "Không (không alias)":
+    elif choice == "Không (không dùng alias)":
         user_states[chat_id]["step"] = "waiting_link_to_shorten"
         user_states[chat_id]["use_alias"] = False
         bot.send_message(chat_id, "🔗 Nhập link cần rút gọn:", reply_markup=types.ReplyKeyboardRemove())
@@ -1436,20 +1427,29 @@ def show_shortened_urls(message):
     """Show all shortened URLs"""
     chat_id = message.chat.id
     
-    # Create inline keyboard with service options
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        types.InlineKeyboardButton("📌 TinyURL", callback_data="show_urls_tinyurl"),
-        types.InlineKeyboardButton("📌 is.gd", callback_data="show_urls_isgd")
-    )
+    # Create reply keyboard with service options
+    markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    markup.add("📌 TinyURL", "📌 is.gd")
     
     bot.send_message(chat_id, "🔗 <b>Chọn dịch vụ để xem link rút gọn:</b>", reply_markup=markup, parse_mode="HTML")
+    user_states[chat_id] = {"step": "waiting_show_service_choice"}
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("show_urls_"))
-def show_urls_callback(call):
+@bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "waiting_show_service_choice")
+def show_urls_callback(message):
     """Display shortened URLs for selected service"""
-    chat_id = call.message.chat.id
-    service = call.data.replace("show_urls_", "")
+    chat_id = message.chat.id
+    service_text = message.text.strip()
+    
+    if service_text == "📌 TinyURL":
+        service = "tinyurl"
+    elif service_text == "📌 is.gd":
+        service = "isgd"
+    else:
+        bot.send_message(chat_id, "❌ Vui lòng chọn TinyURL hoặc is.gd!")
+        return
+    
+    if chat_id in user_states:
+        del user_states[chat_id]
     
     # Load data from corresponding file
     urls_data = load_shortened_urls(service)
@@ -1472,7 +1472,7 @@ def show_urls_callback(call):
             message += f"<b>Lúc:</b> {created_at}\n"
             message += "─" * 40 + "\n"
     
-    bot.send_message(chat_id, message, parse_mode="HTML")
+    bot.send_message(chat_id, message, parse_mode="HTML", reply_markup=types.ReplyKeyboardRemove())
 
 # =================== PRICES MANAGEMENT ===================
 
@@ -1632,42 +1632,164 @@ def process_new_price(message):
         if chat_id in user_states:
             del user_states[chat_id]
 
-# =================== SYNC KEYS FROM GITHUB ===================
+# =================== SYNC DATA FROM GITHUB ===================
 
-@bot.message_handler(commands=['synckeys'])
-def sync_keys_command(message):
-    """Sync keys from GitHub repository"""
+def sync_data_by_type(data_type):
+    """Sync specific data type from GitHub"""
+    GITHUB_RAW_URL = "https://raw.githubusercontent.com/abcxyznd/keys/main"
+    
+    # Define files for each data type
+    data_files = {
+        "keys": {
+            'data/keys/key1d.txt': 'data/keys/key1d.txt',
+            'data/keys/key7d.txt': 'data/keys/key7d.txt',
+            'data/keys/key30d.txt': 'data/keys/key30d.txt',
+            'data/keys/key90d.txt': 'data/keys/key90d.txt',
+            'data/keys/key_solved.txt': 'data/keys/key_solved.txt',
+        },
+        "coupon": {
+            'data/coupon/coupons.json': 'data/coupon/coupons.json',
+        },
+        "prices": {
+            'data/prices/prices.json': 'data/prices/prices.json',
+        },
+        "links": {
+            'data/links/download.json': 'data/links/download.json',
+        },
+        "all": {}
+    }
+    
+    # If all, merge all data types
+    if data_type == "all":
+        files_to_sync = {}
+        for dtype in ["keys", "coupon", "prices", "links", "shortenurl"]:
+            files_to_sync.update(data_files[dtype])
+    else:
+        files_to_sync = data_files.get(data_type, {})
+    
+    if not files_to_sync:
+        return False, "Loại data không hợp lệ"
+    
+    success_count = 0
+    failed_files = []
+    
+    for github_path, local_path in files_to_sync.items():
+        try:
+            url = f"{GITHUB_RAW_URL}/{github_path}"
+            response = requests.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                # Create directory if not exists
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                
+                # Write file
+                with open(local_path, 'w', encoding='utf-8') as f:
+                    f.write(response.text)
+                
+                success_count += 1
+            else:
+                failed_files.append(os.path.basename(local_path))
+                
+        except Exception as e:
+            failed_files.append(os.path.basename(local_path))
+            print(f"[SYNC ERROR] {os.path.basename(local_path)}: {e}")
+    
+    return True, f"Đồng bộ {success_count}/{len(files_to_sync)} files"
+
+@bot.message_handler(commands=['syncdata'])
+def sync_data_command(message):
+    """Sync data from GitHub repository with selection options"""
     chat_id = message.chat.id
     
     if not is_admin(chat_id):
         bot.send_message(chat_id, "❌ Bạn không có quyền sử dụng lệnh này!")
         return
     
+    # Show data type selection
+    markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    markup.add(
+        "🔑 Keys",
+        "🎟️ Coupon",
+        "💰 Prices",
+        "🔗 Links",
+        "📎 Shorten URL",
+        "📦 Tất cả"
+    )
+    
+    bot.send_message(
+        chat_id,
+        "📂 <b>Chọn loại data cần đồng bộ từ GitHub:</b>",
+        reply_markup=markup,
+        parse_mode="HTML"
+    )
+    user_states[chat_id] = {"step": "waiting_sync_data_choice"}
+
+@bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "waiting_sync_data_choice")
+def process_sync_data_choice(message):
+    """Process data sync selection"""
+    chat_id = message.chat.id
+    choice = message.text.strip()
+    
+    # Map button text to data type
+    data_type_map = {
+        "🔑 Keys": "keys",
+        "🎟️ Coupon": "coupon",
+        "💰 Prices": "prices",
+        "🔗 Links": "links",
+        "📎 Shorten URL": "shortenurl",
+        "📦 Tất cả": "all"
+    }
+    
+    data_type = data_type_map.get(choice)
+    
+    if not data_type:
+        bot.send_message(chat_id, "❌ Lựa chọn không hợp lệ!")
+        return
+    
+    # Clear user state
+    if chat_id in user_states:
+        del user_states[chat_id]
+    
     try:
-        from sync_keys import sync_keys_from_github
-        
-        bot.send_message(chat_id, "🔄 Đang đồng bộ keys từ GitHub...")
-        sync_keys_from_github()
-        
-        # Get updated counts
-        count_1d = len(get_keys_by_type("1 Ngày"))
-        count_7d = len(get_keys_by_type("1 Tuần"))
-        count_30d = len(get_keys_by_type("1 Tháng"))
-        count_90d = len(get_keys_by_type("1 Mùa"))
-        
-        msg = (
-            "✅ <b>Đồng bộ hoàn tất!</b>\n\n"
-            f"📊 Key hiện có:\n"
-            f"• 1 Ngày: {count_1d}\n"
-            f"• 1 Tuần: {count_7d}\n"
-            f"• 1 Tháng: {count_30d}\n"
-            f"• 1 Mùa: {count_90d}"
+        bot.send_message(
+            chat_id,
+            f"🔄 Đang đồng bộ {choice.replace('🔑 ', '').replace('🎟️ ', '').replace('💰 ', '').replace('🔗 ', '').replace('📎 ', '').replace('📦 ', '')} từ GitHub...",
+            reply_markup=types.ReplyKeyboardRemove()
         )
-        bot.send_message(chat_id, msg, parse_mode="HTML")
+        
+        success, message_text = sync_data_by_type(data_type)
+        
+        if success:
+            # Get updated info based on data type
+            extra_info = ""
+            if data_type in ["keys", "all"]:
+                count_1d = len(get_keys_by_type("1 Ngày"))
+                count_7d = len(get_keys_by_type("1 Tuần"))
+                count_30d = len(get_keys_by_type("1 Tháng"))
+                count_90d = len(get_keys_by_type("1 Mùa"))
+                extra_info += (
+                    f"\n\n📊 <b>Key hiện có:</b>\n"
+                    f"• 1 Ngày: {count_1d}\n"
+                    f"• 1 Tuần: {count_7d}\n"
+                    f"• 1 Tháng: {count_30d}\n"
+                    f"• 1 Mùa: {count_90d}"
+                )
+            
+            if data_type in ["coupon", "all"]:
+                coupons = load_coupons()
+                extra_info += f"\n\n🎟️ <b>Coupon:</b> {len(coupons)} mã"
+            
+            if data_type in ["prices", "all"]:
+                extra_info += "\n\n💰 <b>Prices:</b> Đã cập nhật bảng giá"
+            
+            msg = f"✅ <b>Đồng bộ hoàn tất!</b>\n\n{message_text}{extra_info}"
+            bot.send_message(chat_id, msg, parse_mode="HTML")
+        else:
+            bot.send_message(chat_id, f"❌ {message_text}")
         
     except Exception as e:
         print(f"[SYNC ERROR] {e}")
-        bot.send_message(chat_id, f"❌ Lỗi đồng bộ: {e}")
+        bot.send_message(chat_id, f"❌ Lỗi đồng bộ: {e}", reply_markup=types.ReplyKeyboardRemove())
 
 # =================== Bot Polling ===================
 
