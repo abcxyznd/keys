@@ -11,7 +11,7 @@
     },
     "30d": {
         "label": "1 Tháng",
-        "amount": 300000,
+        "amount": 250000,
         "currency": "VND"
     },
     "90d": {
