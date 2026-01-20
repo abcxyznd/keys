@@ -1317,10 +1317,10 @@ btn.addEventListener('click',async ()=>{
 
       updateQR(finalAmount);
       
-      const keyStatusEl=document.getElementById('keyStatus');
-      const receivedKeyEl=document.getElementById('receivedKey');
-      receivedKeyEl.innerText=receivedKey;
-      keyStatusEl.style.display='block';
+      // Show key notification after payment success
+      setTimeout(() => {
+        showToast('Key của bạn đã được gửi thành công. Hãy kiểm tra email.', 'success', 6000);
+      }, 1000);
 
       showToast('Trang sẽ tự động tải lại sau 3 giây...', 'info', 3000);
       statusEl.innerText+="\n🔄 Trang sẽ reload sau 3s...";

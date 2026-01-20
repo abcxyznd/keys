@@ -1336,9 +1336,6 @@ def process_shorten_link(message):
         bot.send_message(chat_id, f"❌ Lỗi: {str(e)}")
         if chat_id in user_states:
             del user_states[chat_id]
-    finally:
-        if chat_id in user_states:
-            del user_states[chat_id]
 
 @bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "waiting_tinyurl_alias")
 def process_tinyurl_alias(message):
