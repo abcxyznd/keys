@@ -99,9 +99,7 @@ body::after{
   box-shadow:0 16px 64px rgba(0,0,0,0.4), 0 0 60px rgba(0,212,255,0.04);
   overflow:hidden;
   backdrop-filter:blur(20px);
-  transition:transform 0.3s ease, box-shadow 0.3s ease;
 }
-.card:hover{transform:translateY(-4px);box-shadow:0 24px 80px rgba(0,0,0,0.5), 0 0 80px rgba(0,212,255,0.06);}
 
 .card-header{
   background:linear-gradient(90deg, #00b4d8, #0096c7, #0077b6);
@@ -393,7 +391,7 @@ label,.text1{
   transition:max-height 0.4s ease;
 }
 .guide-content.open{
-  max-height:800px;
+  max-height:1200px;
 }
 .guide-body{
   padding:20px;
@@ -506,6 +504,99 @@ label,.text1{
 .w-full{width:100%;}
 .mt-3{margin-top:12px;}
 .mb-2{margin-bottom:8px;}
+
+/* Confirmation Modal */
+.modal-overlay{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(8px);
+  display:none;
+  align-items:center;justify-content:center;
+  z-index:9998;
+  animation:fadeIn 0.3s ease;
+}
+.modal-overlay.show{
+  display:flex;
+}
+@keyframes fadeIn{
+  from{opacity:0;}
+  to{opacity:1;}
+}
+.modal-box{
+  background:linear-gradient(145deg, rgba(15,20,35,0.98), rgba(10,15,25,0.98));
+  border:1px solid rgba(0,212,255,0.3);
+  border-radius:20px;
+  padding:28px;
+  max-width:400px;width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,212,255,0.1);
+  animation:slideUp 0.3s ease;
+  position:relative;
+}
+@keyframes slideUp{
+  from{transform:translateY(30px);opacity:0;}
+  to{transform:translateY(0);opacity:1;}
+}
+.modal-icon{
+  width:60px;height:60px;
+  margin:0 auto 20px;
+  background:linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,180,255,0.1));
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid rgba(0,212,255,0.3);
+}
+.modal-icon svg{
+  width:32px;height:32px;
+  stroke:#00d4ff;
+}
+.modal-title{
+  font-size:18px;font-weight:700;
+  color:#00d4ff;
+  text-align:center;
+  margin-bottom:16px;
+  letter-spacing:0.3px;
+}
+.modal-message{
+  font-size:14px;color:#e5f6ff;
+  text-align:center;
+  line-height:1.6;
+  margin-bottom:24px;
+}
+.modal-buttons{
+  display:flex;gap:12px;
+  justify-content:center;
+}
+.modal-btn{
+  flex:1;padding:12px 24px;
+  border-radius:12px;
+  font-size:14px;font-weight:600;
+  cursor:pointer;
+  transition:all 0.3s ease;
+  border:1px solid;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.modal-btn-confirm{
+  background:linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,180,255,0.15));
+  border-color:rgba(0,212,255,0.4);
+  color:#fff;
+}
+.modal-btn-confirm:hover{
+  background:linear-gradient(135deg, rgba(0,212,255,0.35), rgba(0,180,255,0.25));
+  box-shadow:0 4px 16px rgba(0,212,255,0.3);
+  transform:translateY(-2px);
+}
+.modal-btn-cancel{
+  background:rgba(255,255,255,0.05);
+  border-color:rgba(255,255,255,0.15);
+  color:#e5f6ff;
+}
+.modal-btn-cancel:hover{
+  background:rgba(255,255,255,0.1);
+  border-color:rgba(255,255,255,0.25);
+  transform:translateY(-2px);
+}
+.modal-btn svg{
+  width:16px;height:16px;
+}
 </style>
 </head>
 <body>
@@ -550,7 +641,7 @@ label,.text1{
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
-          Demo
+          Demo Menu
         </a>
       </div>
       
@@ -558,7 +649,7 @@ label,.text1{
         {% for d in durations %}
           {% if d.key_count > 0 %}
             <option value="{{ d.value }}" data-amount="{{ d.amount }}" data-key-count="{{ d.key_count }}" data-label="{{ d.label }}">
-              {{ d.label }} — {{ "{:,}".format(d.amount) }} VND ({{ d.key_count }} key)
+              {{ d.label }} — {{ "{:,}".format(d.amount) }} VND (Còn Lại {{ d.key_count }} Key)
             </option>
           {% else %}
             <option value="{{ d.value }}" data-amount="{{ d.amount }}" data-key-count="{{ d.key_count }}" data-label="{{ d.label }}" disabled style="color:#555;">
@@ -649,8 +740,8 @@ label,.text1{
       
       <div class="flex gap-2 mt-3">
         <input type="text" id="coupon" placeholder="Mã giảm giá (nếu có)" style="flex:1;">
-        <button id="testCouponBtn" class="btn-glass btn-sm" style="white-space:nowrap;padding:14px 20px;border-radius:10px;font-size:13px;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <button id="testCouponBtn" class="btn-glass btn-sm" style="white-space:nowrap;padding:10px 14px;border-radius:10px;font-size:12px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
           Kiểm tra
@@ -893,6 +984,7 @@ function copyTransferInfo(elementId){
   navigator.clipboard.writeText(text).then(()=>{
     showToast('Đã copy: '+text, 'success', 2000);
   }).catch(err=>{
+    showToast('Không thể copy! Vui lòng thử lại.', 'error', 2000);
     console.error('Failed to copy:', err);
   });
 }
@@ -918,6 +1010,7 @@ if(copyCodeBtn){
     const textToCopy=codeSpan.innerText;
     try{
       await navigator.clipboard.writeText(textToCopy);
+      showToast('Đã copy nội dung CK: '+textToCopy, 'success', 2000);
       const originalHTML=copyCodeBtn.innerHTML;
       copyCodeBtn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
       copyCodeBtn.style.color='#22c55e';
@@ -927,6 +1020,7 @@ if(copyCodeBtn){
       }, 2000);
     }catch(err){
       console.error('Failed to copy:', err);
+      showToast('Không thể copy! Vui lòng thử lại.', 'error', 2000);
       copyCodeBtn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>`;
       copyCodeBtn.style.color='#ef4444';
       setTimeout(()=>{
@@ -941,11 +1035,12 @@ function updateDurationDisplay(){
   const selected=durationSelect.options[durationSelect.selectedIndex];
   let originalAmount=parseInt(selected.getAttribute("data-amount").replace(/,/g, ""));
   let discountedAmount=originalAmount-(originalAmount*appliedDiscount/100);
+  const keyCount=selected.getAttribute("data-key-count");
   
   if(appliedDiscount > 0){
-    selected.text=selected.getAttribute("data-label")+" — "+discountedAmount.toLocaleString()+" VND ("+selected.getAttribute("data-key-count")+" key) [-"+appliedDiscount+"%]";
+    selected.text=selected.getAttribute("data-label")+" — "+discountedAmount.toLocaleString()+" VND (Còn Lại "+keyCount+" Key) [-"+appliedDiscount+"%]";
   }else{
-    selected.text=selected.getAttribute("data-label")+" — "+originalAmount.toLocaleString()+" VND ("+selected.getAttribute("data-key-count")+" key)";
+    selected.text=selected.getAttribute("data-label")+" — "+originalAmount.toLocaleString()+" VND (Còn Lại "+keyCount+" Key)";
   }
 }
 
@@ -1086,6 +1181,76 @@ btn.addEventListener('click',async ()=>{
 
   startCooldown(35);
 });
+
+// Demo button confirmation modal
+const demoBtn = document.querySelector('a[href="https://tinyurl.com/2ataljdt"]');
+const modalOverlay = document.getElementById('demoModal');
+const confirmDemoBtn = document.getElementById('confirmDemoBtn');
+const cancelDemoBtn = document.getElementById('cancelDemoBtn');
+let demoUrl = '';
+
+if (demoBtn) {
+  demoBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    demoUrl = demoBtn.getAttribute('href');
+    modalOverlay.classList.add('show');
+  });
+}
+
+if (confirmDemoBtn) {
+  confirmDemoBtn.addEventListener('click', () => {
+    window.open(demoUrl, '_blank');
+    modalOverlay.classList.remove('show');
+  });
+}
+
+if (cancelDemoBtn) {
+  cancelDemoBtn.addEventListener('click', () => {
+    modalOverlay.classList.remove('show');
+  });
+}
+
+if (modalOverlay) {
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) {
+      modalOverlay.classList.remove('show');
+    }
+  });
+}
 </script>
+
+<!-- Demo Confirmation Modal -->
+<div id="demoModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </div>
+    <div class="modal-title">Xác nhận chuyển hướng</div>
+    <div class="modal-message">
+      Bạn sẽ được chuyển hướng tới trang Demo Menu Hack<br>
+      Bạn chắc chắn chứ?
+    </div>
+    <div class="modal-buttons">
+      <button id="confirmDemoBtn" class="modal-btn modal-btn-confirm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Tôi đồng ý
+      </button>
+      <button id="cancelDemoBtn" class="modal-btn modal-btn-cancel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
