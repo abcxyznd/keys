@@ -225,6 +225,7 @@ def get_github_manager():
 TG_BOT_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
 TG_CHAT_ID = "7454505306"
 COUPON_FILE = os.path.join("data", "coupon", "coupons.json")
+ADMIN_FILE = os.path.join("data", "admin", "admin.json")
 
 # Initialize bot
 bot = TeleBot(TG_BOT_TOKEN)
@@ -233,7 +234,8 @@ user_states = {}  # Store user states for multi-step commands
 # =================== Utils ===================
 def is_admin(chat_id):
     """Check if user is admin"""
-    return str(chat_id) == str(TG_CHAT_ID)
+    admins = load_admins()
+    return str(chat_id) in admins or str(chat_id) == str(TG_CHAT_ID)
 
 def send_telegram(message):
     """Send message to telegram admin chat"""
@@ -245,6 +247,63 @@ def send_telegram(message):
     except Exception as e:
         print(f"[TG ERROR] {e}")
         return False
+
+# =================== Admin Functions ===================
+def load_admins():
+    """Load admin list from JSON file"""
+    if not os.path.exists(ADMIN_FILE):
+        return []
+    try:
+        with open(ADMIN_FILE, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            data = json.loads(content)
+            return data.get("admins", [])
+    except Exception as e:
+        print(f"[ADMIN ERROR] Failed to load admins: {e}")
+        return []
+
+def save_admins(admins):
+    """Save admin list to JSON file and GitHub API"""
+    try:
+        os.makedirs(os.path.dirname(ADMIN_FILE), exist_ok=True)
+        data = {"admins": admins}
+        with open(ADMIN_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        
+        # Update GitHub if available
+        github_mgr = get_github_manager()
+        if github_mgr.use_github:
+            content = json.dumps(data, indent=2, ensure_ascii=False)
+            github_mgr._write_file_content(
+                'data/admin/admin.json',
+                content,
+                'Update admins via bot command'
+            )
+        
+        return True
+    except Exception as e:
+        print(f"[ADMIN ERROR] Failed to save admins: {e}")
+        return False
+
+def add_admin_id(admin_id):
+    """Add an admin ID to the list"""
+    admins = load_admins()
+    admin_str = str(admin_id)
+    if admin_str not in admins:
+        admins.append(admin_str)
+        return save_admins(admins)
+    return False
+
+def remove_admin_id(admin_id):
+    """Remove an admin ID from the list"""
+    admins = load_admins()
+    admin_str = str(admin_id)
+    if admin_str in admins:
+        admins.remove(admin_str)
+        return save_admins(admins)
+    return False
 
 # =================== Coupon Functions ===================
 def load_coupons():
@@ -609,7 +668,10 @@ def start(message):
         types.InlineKeyboardButton("🔗 Rút gọn Link", callback_data="category_links")
     )
     markup.add(
-        types.InlineKeyboardButton("🔄 Đồng bộ dữ liệu", callback_data="menu_syncdata")
+        types.InlineKeyboardButton("� Quản lý Admin", callback_data="category_admin")
+    )
+    markup.add(
+        types.InlineKeyboardButton("�🔄 Đồng bộ dữ liệu", callback_data="menu_syncdata")
     )
     bot.send_message(message.chat.id, 
                     "👋 <b>Chào mừng đến với Bot Quản Lý!</b>\n\n"
@@ -697,6 +759,26 @@ def handle_category_callback(call):
             parse_mode="HTML"
         )
     
+    elif call.data == "category_admin":
+        # Show Admin Management submenu
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            types.InlineKeyboardButton("👁️ Xem Admin", callback_data="menu_xemadmin"),
+            types.InlineKeyboardButton("➕ Thêm Admin", callback_data="menu_themadmin")
+        )
+        markup.add(
+            types.InlineKeyboardButton("❌ Xóa Admin", callback_data="menu_xoaadmin")
+        )
+        markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="back_to_main"))
+        
+        bot.edit_message_text(
+            "👥 <b>Quản lý Admin</b>\n\nChọn chức năng:",
+            chat_id,
+            call.message.id,
+            reply_markup=markup,
+            parse_mode="HTML"
+        )
+    
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_main")
@@ -754,6 +836,12 @@ def handle_menu_callback(call):
         rut_gon_link(call.message)
     elif call.data == "menu_showshortenurl":
         show_shortened_urls(call.message)
+    elif call.data == "menu_xemadmin":
+        xem_admin(call.message)
+    elif call.data == "menu_themadmin":
+        them_admin(call.message)
+    elif call.data == "menu_xoaadmin":
+        xoa_admin(call.message)
     
     bot.answer_callback_query(call.id)
 
@@ -2031,6 +2119,162 @@ def sync_data_command(message):
         reply_markup=markup,
         parse_mode="HTML"
     )
+
+# =================== ADMIN MANAGEMENT ===================
+
+@bot.message_handler(commands=['xemadmin'])
+def xem_admin(message):
+    """View list of admin IDs"""
+    chat_id = message.chat.id
+    
+    if not is_admin(chat_id):
+        bot.send_message(chat_id, "❌ Bạn không có quyền sử dụng lệnh này!")
+        return
+    
+    admins = load_admins()
+    
+    if not admins:
+        msg = "👥 <b>Danh sách Admin</b>\n\n❌ Chưa có admin nào được thêm.\n\n💡 Sử dụng /themadmin để thêm admin mới."
+    else:
+        msg = "👥 <b>Danh sách Admin</b>\n\n"
+        for i, admin_id in enumerate(admins, 1):
+            msg += f"{i}. <code>{admin_id}</code>\n"
+        msg += f"\n📊 Tổng: {len(admins)} admin"
+    
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="category_admin"))
+    
+    bot.send_message(chat_id, msg, reply_markup=markup, parse_mode="HTML")
+
+@bot.message_handler(commands=['themadmin'])
+def them_admin(message):
+    """Add new admin ID"""
+    chat_id = message.chat.id
+    
+    if not is_admin(chat_id):
+        bot.send_message(chat_id, "❌ Bạn không có quyền sử dụng lệnh này!")
+        return
+    
+    # Set user state
+    user_states[chat_id] = {"step": "waiting_admin_id"}
+    
+    msg = (
+        "➕ <b>Thêm Admin Mới</b>\n\n"
+        "📝 Vui lòng gửi ID Telegram của admin mới.\n\n"
+        "💡 <i>Bạn có thể lấy ID từ @userinfobot hoặc forward tin nhắn của user đến bot @getidsbot</i>\n\n"
+        "❌ Gửi /huy để hủy thao tác."
+    )
+    
+    bot.send_message(chat_id, msg, parse_mode="HTML")
+
+@bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "waiting_admin_id")
+def handle_new_admin_id(message):
+    """Handle new admin ID input"""
+    chat_id = message.chat.id
+    admin_id = message.text.strip()
+    
+    # Check if user wants to cancel
+    if admin_id == "/huy":
+        user_states.pop(chat_id, None)
+        bot.send_message(chat_id, "❌ Đã hủy thao tác thêm admin.")
+        return
+    
+    # Validate ID (should be numeric)
+    if not admin_id.isdigit():
+        bot.send_message(chat_id, "❌ ID không hợp lệ! Vui lòng gửi lại ID dạng số.")
+        return
+    
+    # Check if already admin
+    admins = load_admins()
+    if admin_id in admins:
+        bot.send_message(chat_id, f"⚠️ ID <code>{admin_id}</code> đã là admin rồi!", parse_mode="HTML")
+        user_states.pop(chat_id, None)
+        return
+    
+    # Check if main admin
+    if admin_id == str(TG_CHAT_ID):
+        bot.send_message(chat_id, f"⚠️ ID <code>{admin_id}</code> là main admin, không cần thêm vào danh sách!", parse_mode="HTML")
+        user_states.pop(chat_id, None)
+        return
+    
+    # Add admin
+    if add_admin_id(admin_id):
+        msg = f"✅ <b>Đã thêm admin thành công!</b>\n\nID: <code>{admin_id}</code>"
+        bot.send_message(chat_id, msg, parse_mode="HTML")
+        
+        # Notify main admin
+        tg_msg = f"➕ <b>Admin mới được thêm</b>\nID: <code>{admin_id}</code>"
+        send_telegram(tg_msg)
+    else:
+        bot.send_message(chat_id, "❌ Lỗi khi thêm admin!")
+    
+    user_states.pop(chat_id, None)
+
+@bot.message_handler(commands=['xoaadmin'])
+def xoa_admin(message):
+    """Delete admin ID"""
+    chat_id = message.chat.id
+    
+    if not is_admin(chat_id):
+        bot.send_message(chat_id, "❌ Bạn không có quyền sử dụng lệnh này!")
+        return
+    
+    admins = load_admins()
+    
+    if not admins:
+        msg = "❌ <b>Không có admin nào để xóa!</b>\n\n💡 Sử dụng /themadmin để thêm admin mới."
+        bot.send_message(chat_id, msg, parse_mode="HTML")
+        return
+    
+    # Show list of admins with delete buttons
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    for admin_id in admins:
+        markup.add(
+            types.InlineKeyboardButton(
+                f"🗑️ Xóa {admin_id}",
+                callback_data=f"deladmin_{admin_id}"
+            )
+        )
+    markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="category_admin"))
+    
+    msg = "❌ <b>Xóa Admin</b>\n\n📋 Chọn admin muốn xóa:"
+    bot.send_message(chat_id, msg, reply_markup=markup, parse_mode="HTML")
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("deladmin_"))
+def handle_delete_admin_callback(call):
+    """Handle delete admin confirmation"""
+    chat_id = call.message.chat.id
+    admin_id = call.data.replace("deladmin_", "")
+    
+    # Create confirmation buttons
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        types.InlineKeyboardButton("✅ Xác nhận", callback_data=f"confirmdeladmin_{admin_id}"),
+        types.InlineKeyboardButton("❌ Hủy", callback_data="menu_xoaadmin")
+    )
+    
+    msg = f"⚠️ <b>Xác nhận xóa admin</b>\n\nBạn có chắc muốn xóa admin ID: <code>{admin_id}</code>?"
+    bot.edit_message_text(msg, chat_id, call.message.id, reply_markup=markup, parse_mode="HTML")
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("confirmdeladmin_"))
+def handle_confirm_delete_admin_callback(call):
+    """Handle confirmed admin deletion"""
+    chat_id = call.message.chat.id
+    admin_id = call.data.replace("confirmdeladmin_", "")
+    
+    if remove_admin_id(admin_id):
+        msg = f"✅ <b>Đã xóa admin thành công!</b>\n\nID: <code>{admin_id}</code>"
+        bot.edit_message_text(msg, chat_id, call.message.id, parse_mode="HTML")
+        
+        # Notify main admin
+        tg_msg = f"➖ <b>Admin bị xóa</b>\nID: <code>{admin_id}</code>"
+        send_telegram(tg_msg)
+    else:
+        msg = "❌ Lỗi khi xóa admin!"
+        bot.edit_message_text(msg, chat_id, call.message.id, parse_mode="HTML")
+    
+    bot.answer_callback_query(call.id)
 
 # =================== Bot Polling ===================
 
