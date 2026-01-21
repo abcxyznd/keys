@@ -222,7 +222,7 @@ def get_github_manager():
     return github_manager
 
 # =================== Bot Configuration ===================
-TG_BOT_TOKEN = os.environ.get("TG_BOT_TOKEN")
+TG_BOT_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
 TG_CHAT_ID = "7454505306"
 COUPON_FILE = os.path.join("data", "coupon", "coupons.json")
 ADMIN_FILE = os.path.join("data", "admin", "admin.json")
@@ -401,13 +401,27 @@ def is_coupon_valid(code, period_code):
     
     # Check expiration
     if coupon.get("expires_at"):
-        expires = datetime.strptime(coupon["expires_at"], "%Y-%m-%d")
-        if datetime.now() > expires:
-            return False, "Mã giảm giá đã hết hạn"
+        try:
+            expires = datetime.strptime(coupon["expires_at"], "%Y-%m-%d")
+            if datetime.now() > expires:
+                return False, "Mã giảm giá đã hết hạn"
+        except ValueError:
+            pass  # Invalid date format, ignore expiration check
     
-    # Check uses left
-    if coupon.get("uses_left", 0) <= 0:
-        return False, "Mã giảm giá đã hết lượt sử dụng"
+    # Check uses left - handle both old 'uses' format and new 'uses_left' format
+    coupon_type = coupon.get("type", "limited")
+    if coupon_type == "unlimited":
+        # Unlimited coupon, always valid (unless expired)
+        pass
+    else:
+        # Limited coupon, check uses
+        uses_left = coupon.get("uses_left")
+        if uses_left is None:
+            # Handle old format with 'uses' field
+            uses_left = coupon.get("uses", 0)
+        
+        if uses_left <= 0:
+            return False, "Mã giảm giá đã hết lượt sử dụng"
     
     # Check if applicable for this type
     types = coupon.get("types", [])
@@ -422,15 +436,42 @@ def use_coupon(code):
     code_upper = code.upper()
     
     if code_upper in coupons:
-        coupons[code_upper]["uses_left"] = coupons[code_upper].get("uses_left", 1) - 1
+        coupon = coupons[code_upper]
+        coupon_type = coupon.get("type", "limited")
+        
+        # Skip decrement for unlimited coupons
+        if coupon_type == "unlimited":
+            return True
+        
+        # Handle both old 'uses' format and new 'uses_left' format
+        if "uses_left" in coupon:
+            coupon["uses_left"] = max(0, coupon["uses_left"] - 1)
+            uses_left = coupon["uses_left"]
+        elif "uses" in coupon:
+            # Convert old format to new format
+            coupon["uses_left"] = max(0, coupon.get("uses", 1) - 1)
+            uses_left = coupon["uses_left"]
+            # Remove old field
+            if "uses" in coupon:
+                del coupon["uses"]
+        else:
+            # Default case
+            coupon["uses_left"] = 0
+            uses_left = 0
         
         # Check if coupon is exhausted
-        uses_left = coupons[code_upper]["uses_left"]
-        expires_at = coupons[code_upper].get("expires_at")
+        expires_at = coupon.get("expires_at")
+        is_expired = False
         
-        if uses_left <= 0 or (expires_at and datetime.now() > datetime.strptime(expires_at, "%Y-%m-%d")):
+        if expires_at:
+            try:
+                is_expired = datetime.now() > datetime.strptime(expires_at, "%Y-%m-%d")
+            except ValueError:
+                pass
+        
+        if uses_left <= 0 or is_expired:
             # Move to used.json
-            move_coupon_to_used(code_upper, coupons[code_upper])
+            move_coupon_to_used(code_upper, coupon)
             # Remove from active coupons
             del coupons[code_upper]
         
@@ -724,7 +765,8 @@ def start(message):
         types.InlineKeyboardButton("🤖 Quản lý Bot", callback_data="category_bot")
     )
     markup.add(
-        types.InlineKeyboardButton("🔄 Đồng bộ dữ liệu", callback_data="menu_syncdata")
+        types.InlineKeyboardButton("� Dashboard", callback_data="show_dashboard"),
+        types.InlineKeyboardButton("�🔄 Đồng bộ dữ liệu", callback_data="menu_syncdata")
     )
     bot.send_message(message.chat.id, 
                     "👋 <b>Chào mừng đến với Bot Quản Lý Thuộc Muakey.cloud!</b>\n\n"
@@ -2552,6 +2594,111 @@ def handle_confirm_broadcast(call):
     send_telegram(tg_msg)
     
     user_states.pop(chat_id, None)
+    bot.answer_callback_query(call.id)
+
+# =================== Dashboard Handler ===================
+
+@bot.callback_query_handler(func=lambda call: call.data == "show_dashboard")
+def show_dashboard(call):
+    """Show system dashboard with all routes and functions"""
+    chat_id = call.message.chat.id
+    
+    # Get system statistics
+    try:
+        from app import load_coupons, load_prices, count_keys, get_total_orders
+        
+        dashboard_text = "📊 <b>SYSTEM DASHBOARD</b>\n\n"
+        
+        # System Stats
+        dashboard_text += "📈 <b>THỐNG KÊ HỆ THỐNG:</b>\n"
+        dashboard_text += f"• Tổng Keys: {sum(count_keys(t) for t in ['1d', '7d', '30d', '90d'])}\n"
+        dashboard_text += f"• Keys 1D: {count_keys('1d')}\n"
+        dashboard_text += f"• Keys 7D: {count_keys('7d')}\n" 
+        dashboard_text += f"• Keys 30D: {count_keys('30d')}\n"
+        dashboard_text += f"• Keys 90D: {count_keys('90d')}\n"
+        dashboard_text += f"• Tổng Coupons: {len(load_coupons())}\n"
+        dashboard_text += f"• Tổng Orders: {get_total_orders()}\n\n"
+        
+        # Web Routes
+        dashboard_text += "🌐 <b>WEB ROUTES:</b>\n"
+        dashboard_text += "• <code>/</code> - Trang chủ\n"
+        dashboard_text += "• <code>/check_coupon</code> - Kiểm tra coupon\n"
+        dashboard_text += "• <code>/check_mb_payment</code> - Xử lý thanh toán\n"
+        dashboard_text += "• <code>/admin/login</code> - Admin login\n"
+        dashboard_text += "• <code>/admin/dashboard</code> - Admin panel\n\n"
+        
+        # API Routes
+        dashboard_text += "🔗 <b>API ENDPOINTS:</b>\n"
+        dashboard_text += "• <code>/api/mbbank/status</code> - API status\n"
+        dashboard_text += "• <code>/admin/api/keys/*</code> - Key management\n"
+        dashboard_text += "• <code>/admin/api/coupons/*</code> - Coupon CRUD\n"
+        dashboard_text += "• <code>/admin/api/prices</code> - Price management\n"
+        dashboard_text += "• <code>/admin/api/stats</code> - Dashboard stats\n\n"
+        
+        # Bot Functions
+        dashboard_text += "🤖 <b>BOT FUNCTIONS:</b>\n"
+        dashboard_text += "• Key Management (CRUD)\n"
+        dashboard_text += "• Coupon Management (CRUD)\n"
+        dashboard_text += "• Price Management\n"
+        dashboard_text += "• URL Shortening\n"
+        dashboard_text += "• Admin Management\n"
+        dashboard_text += "• GitHub Sync\n"
+        dashboard_text += "• Broadcast Messages\n\n"
+        
+        # Data Files
+        dashboard_text += "💾 <b>DATA STRUCTURE:</b>\n"
+        dashboard_text += "• <code>/data/keys/</code> - Key storage\n"
+        dashboard_text += "• <code>/data/coupon/</code> - Coupon data\n"
+        dashboard_text += "• <code>/data/prices/</code> - Pricing config\n"
+        dashboard_text += "• <code>/data/dashboard/</code> - Admin auth\n"
+        dashboard_text += "• <code>/data/users/</code> - User management\n"
+        dashboard_text += "• <code>/data/links/</code> - Download links\n"
+        dashboard_text += "• <code>/data/shortenurl/</code> - URL shortening\n\n"
+        
+        # Environment
+        dashboard_text += "⚙️ <b>ENVIRONMENT:</b>\n"
+        dashboard_text += f"• GitHub Integration: {'✅' if os.environ.get('GITHUB_TOKEN') else '❌'}\n"
+        dashboard_text += f"• SendGrid Email: {'✅' if os.environ.get('SENDGRID_API_KEY') else '❌'}\n"
+        dashboard_text += f"• Telegram Bot: {'✅' if os.environ.get('TELEGRAM_BOT_TOKEN') else '❌'}\n"
+        
+    except Exception as e:
+        dashboard_text = f"❌ <b>Lỗi tải dashboard:</b>\n<code>{str(e)}</code>"
+    
+    # Back button
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("🔙 Quay lại Menu", callback_data="back_to_start"))
+    
+    bot.edit_message_text(dashboard_text, chat_id, call.message.message_id, 
+                         reply_markup=markup, parse_mode="HTML")
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_start")
+def back_to_start(call):
+    """Go back to main menu"""
+    chat_id = call.message.chat.id
+    
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        types.InlineKeyboardButton("🔑 Quản lý Key", callback_data="category_keys"),
+        types.InlineKeyboardButton("🎟️ Quản lý Coupon", callback_data="category_coupon")
+    )
+    markup.add(
+        types.InlineKeyboardButton("💰 Quản lý Giá", callback_data="category_prices"),
+        types.InlineKeyboardButton("🔗 Rút gọn Link", callback_data="category_links")
+    )
+    markup.add(
+        types.InlineKeyboardButton("👥 Quản lý Admin", callback_data="category_admin"),
+        types.InlineKeyboardButton("🤖 Quản lý Bot", callback_data="category_bot")
+    )
+    markup.add(
+        types.InlineKeyboardButton("📊 Dashboard", callback_data="show_dashboard"),
+        types.InlineKeyboardButton("🔄 Đồng bộ dữ liệu", callback_data="menu_syncdata")
+    )
+    
+    bot.edit_message_text("👋 <b>Chào mừng đến với Bot Quản Lý Thuộc Muakey.cloud!</b>\n\n"
+                         "📋 Chọn danh mục bạn muốn quản lý:",
+                         chat_id, call.message.message_id,
+                         reply_markup=markup, parse_mode="HTML")
     bot.answer_callback_query(call.id)
 
 # =================== Bot Polling ===================

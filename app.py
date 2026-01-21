@@ -1473,6 +1473,117 @@ def admin_api_get_coupons():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route("/admin/api/coupons", methods=["POST"])
+@require_admin_auth
+def admin_api_add_coupon():
+    """Add new coupon"""
+    try:
+        data = request.get_json()
+        code = data.get('code', '').upper().strip()
+        discount = data.get('discount')
+        coupon_type = data.get('type', 'limited')
+        uses = data.get('uses', 1)
+        expires_at = data.get('expires_at')
+        
+        if not code or not discount:
+            return jsonify({'success': False, 'message': 'Mã coupon và phần trăm giảm giá là bắt buộc'})
+        
+        # Load existing coupons
+        coupons = load_coupons()
+        
+        # Check if coupon code already exists
+        if code in coupons:
+            return jsonify({'success': False, 'message': 'Mã coupon đã tồn tại'})
+        
+        # Create new coupon
+        new_coupon = {
+            'discount': int(discount),
+            'type': coupon_type,
+            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        
+        if coupon_type == 'limited':
+            new_coupon['uses_left'] = int(uses)
+        else:
+            new_coupon['uses_left'] = 999999  # Unlimited
+        
+        if expires_at:
+            new_coupon['expires_at'] = expires_at
+        
+        # Save coupon
+        coupons[code] = new_coupon
+        if save_coupons(coupons):
+            return jsonify({'success': True, 'message': 'Tạo coupon thành công'})
+        else:
+            return jsonify({'success': False, 'message': 'Lỗi lưu coupon'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route("/admin/api/coupons/<code>", methods=["PUT"])
+@require_admin_auth
+def admin_api_update_coupon(code):
+    """Update existing coupon"""
+    try:
+        data = request.get_json()
+        code = code.upper().strip()
+        
+        # Load existing coupons
+        coupons = load_coupons()
+        
+        if code not in coupons:
+            return jsonify({'success': False, 'message': 'Coupon không tồn tại'})
+        
+        # Update coupon data
+        coupon = coupons[code]
+        coupon['discount'] = int(data.get('discount', coupon.get('discount', 0)))
+        coupon['type'] = data.get('type', coupon.get('type', 'limited'))
+        
+        if coupon['type'] == 'limited':
+            coupon['uses_left'] = int(data.get('uses', coupon.get('uses_left', 1)))
+        else:
+            coupon['uses_left'] = 999999
+        
+        expires_at = data.get('expires_at')
+        if expires_at:
+            coupon['expires_at'] = expires_at
+        elif 'expires_at' in coupon:
+            del coupon['expires_at']
+        
+        coupon['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Save updated coupons
+        coupons[code] = coupon
+        if save_coupons(coupons):
+            return jsonify({'success': True, 'message': 'Cập nhật coupon thành công'})
+        else:
+            return jsonify({'success': False, 'message': 'Lỗi lưu coupon'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route("/admin/api/coupons/<code>", methods=["DELETE"])
+@require_admin_auth
+def admin_api_delete_coupon(code):
+    """Delete coupon"""
+    try:
+        code = code.upper().strip()
+        
+        # Load existing coupons
+        coupons = load_coupons()
+        
+        if code not in coupons:
+            return jsonify({'success': False, 'message': 'Coupon không tồn tại'})
+        
+        # Remove coupon
+        del coupons[code]
+        
+        # Save updated coupons
+        if save_coupons(coupons):
+            return jsonify({'success': True, 'message': 'Xóa coupon thành công'})
+        else:
+            return jsonify({'success': False, 'message': 'Lỗi lưu dữ liệu'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route("/admin/api/stats", methods=["GET"])
 @require_admin_auth
 def admin_api_stats():
