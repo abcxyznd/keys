@@ -226,6 +226,7 @@ TG_BOT_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
 TG_CHAT_ID = "7454505306"
 COUPON_FILE = os.path.join("data", "coupon", "coupons.json")
 ADMIN_FILE = os.path.join("data", "admin", "admin.json")
+USERS_FILE = os.path.join("data", "users", "users.json")
 
 # Initialize bot
 bot = TeleBot(TG_BOT_TOKEN)
@@ -304,6 +305,54 @@ def remove_admin_id(admin_id):
         admins.remove(admin_str)
         return save_admins(admins)
     return False
+
+# =================== Users Functions ===================
+def load_users():
+    """Load users list from JSON file"""
+    if not os.path.exists(USERS_FILE):
+        return []
+    try:
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            data = json.loads(content)
+            return data.get("users", [])
+    except Exception as e:
+        print(f"[USERS ERROR] Failed to load users: {e}")
+        return []
+
+def save_users(users):
+    """Save users list to JSON file and GitHub API"""
+    try:
+        os.makedirs(os.path.dirname(USERS_FILE), exist_ok=True)
+        data = {"users": users}
+        with open(USERS_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        
+        # Update GitHub if available
+        github_mgr = get_github_manager()
+        if github_mgr.use_github:
+            content = json.dumps(data, indent=2, ensure_ascii=False)
+            github_mgr._write_file_content(
+                'data/users/users.json',
+                content,
+                'Update users via bot command'
+            )
+        
+        return True
+    except Exception as e:
+        print(f"[USERS ERROR] Failed to save users: {e}")
+        return False
+
+def add_user_id(user_id):
+    """Add a user ID to the list (if not already present)"""
+    users = load_users()
+    user_str = str(user_id)
+    if user_str not in users:
+        users.append(user_str)
+        return save_users(users)
+    return True  # Already exists
 
 # =================== Coupon Functions ===================
 def load_coupons():
@@ -658,6 +707,9 @@ def save_new_coupon(message, chat_id):
 @bot.message_handler(commands=['start'])
 def start(message):
     """Start command - Show main menu categories"""
+    # Track user
+    add_user_id(message.chat.id)
+    
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
         types.InlineKeyboardButton("🔑 Quản lý Key", callback_data="category_keys"),
@@ -668,13 +720,14 @@ def start(message):
         types.InlineKeyboardButton("🔗 Rút gọn Link", callback_data="category_links")
     )
     markup.add(
-        types.InlineKeyboardButton("👥 Quản lý Admin", callback_data="category_admin")
+        types.InlineKeyboardButton("👥 Quản lý Admin", callback_data="category_admin"),
+        types.InlineKeyboardButton("🤖 Quản lý Bot", callback_data="category_bot")
     )
     markup.add(
         types.InlineKeyboardButton("🔄 Đồng bộ dữ liệu", callback_data="menu_syncdata")
     )
     bot.send_message(message.chat.id, 
-                    "👋 <b>Chào mừng đến với Bot Quản Lý!</b>\n\n"
+                    "👋 <b>Chào mừng đến với Bot Quản Lý Thuộc Muakey.cloud!</b>\n\n"
                     "📋 Chọn danh mục bạn muốn quản lý:",
                     reply_markup=markup, parse_mode="HTML")
 
@@ -779,6 +832,23 @@ def handle_category_callback(call):
             parse_mode="HTML"
         )
     
+    elif call.data == "category_bot":
+        # Show Bot Management submenu
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            types.InlineKeyboardButton("📢 Tin nhắn Server", callback_data="menu_broadcast"),
+            types.InlineKeyboardButton("👥 Xem Users", callback_data="menu_xemusers")
+        )
+        markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="back_to_main"))
+        
+        bot.edit_message_text(
+            "🤖 <b>Quản lý Bot</b>\n\nChọn chức năng:",
+            chat_id,
+            call.message.id,
+            reply_markup=markup,
+            parse_mode="HTML"
+        )
+    
     bot.answer_callback_query(call.id)
 
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_main")
@@ -796,7 +866,8 @@ def handle_back_to_main(call):
         types.InlineKeyboardButton("🔗 Rút gọn Link", callback_data="category_links")
     )
     markup.add(
-        types.InlineKeyboardButton("👥 Quản lý Admin", callback_data="category_admin")
+        types.InlineKeyboardButton("👥 Quản lý Admin", callback_data="category_admin"),
+        types.InlineKeyboardButton("🤖 Quản lý Bot", callback_data="category_bot")
     )
     markup.add(
         types.InlineKeyboardButton("🔄 Đồng bộ dữ liệu", callback_data="menu_syncdata")
@@ -845,6 +916,10 @@ def handle_menu_callback(call):
         them_admin(call.message)
     elif call.data == "menu_xoaadmin":
         xoa_admin(call.message)
+    elif call.data == "menu_broadcast":
+        broadcast_message(call.message)
+    elif call.data == "menu_xemusers":
+        xem_users(call.message)
     
     bot.answer_callback_query(call.id)
 
@@ -1993,13 +2068,16 @@ def sync_data_by_type(data_type):
         "admin": {
             'data/admin/admin.json': 'data/admin/admin.json',
         },
+        "users": {
+            'data/users/users.json': 'data/users/users.json',
+        },
         "all": {}
     }
     
     # If all, merge all data types
     if data_type == "all":
         files_to_sync = {}
-        for dtype in ["keys", "coupon", "prices", "links", "shortenurl", "admin"]:
+        for dtype in ["keys", "coupon", "prices", "links", "shortenurl", "admin", "users"]:
             files_to_sync.update(data_files[dtype])
     else:
         files_to_sync = data_files.get(data_type, {})
@@ -2293,6 +2371,167 @@ def handle_confirm_delete_admin_callback(call):
         msg = "❌ Lỗi khi xóa admin!"
         bot.edit_message_text(msg, chat_id, call.message.id, parse_mode="HTML")
     
+    bot.answer_callback_query(call.id)
+
+# =================== BOT MANAGEMENT ===================
+
+@bot.message_handler(commands=['xemusers'])
+def xem_users(message):
+    """View list of user IDs"""
+    chat_id = message.chat.id
+    
+    if not is_admin(chat_id):
+        bot.send_message(chat_id, "❌ Bạn không có quyền sử dụng lệnh này!")
+        return
+    
+    users = load_users()
+    
+    if not users:
+        msg = "👥 <b>Danh sách Users</b>\n\n❌ Chưa có user nào sử dụng bot."
+    else:
+        msg = "👥 <b>Danh sách Users</b>\n\n"
+        # Show first 50 users
+        display_users = users[:50]
+        for i, user_id in enumerate(display_users, 1):
+            msg += f"{i}. <code>{user_id}</code>\n"
+        
+        if len(users) > 50:
+            msg += f"\n... và {len(users) - 50} users khác"
+        
+        msg += f"\n\n📊 Tổng: {len(users)} users"
+    
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="category_bot"))
+    
+    bot.send_message(chat_id, msg, reply_markup=markup, parse_mode="HTML")
+
+@bot.message_handler(commands=['broadcast'])
+def broadcast_message(message):
+    """Broadcast message to all users"""
+    chat_id = message.chat.id
+    
+    if not is_admin(chat_id):
+        bot.send_message(chat_id, "❌ Bạn không có quyền sử dụng lệnh này!")
+        return
+    
+    # Set user state
+    user_states[chat_id] = {"step": "waiting_broadcast_message"}
+    
+    msg = (
+        "📢 <b>Tin nhắn Server</b>\n\n"
+        "📝 Vui lòng gửi nội dung tin nhắn muốn broadcast đến tất cả users.\n\n"
+        "💡 <i>Tin nhắn có thể chứa text, emoji, và HTML formatting</i>\n\n"
+        "❌ Gửi /huy để hủy thao tác."
+    )
+    
+    bot.send_message(chat_id, msg, parse_mode="HTML")
+
+@bot.message_handler(func=lambda message: user_states.get(message.chat.id, {}).get("step") == "waiting_broadcast_message")
+def handle_broadcast_message(message):
+    """Handle broadcast message input"""
+    chat_id = message.chat.id
+    broadcast_text = message.text
+    
+    # Check if user wants to cancel
+    if broadcast_text == "/huy":
+        user_states.pop(chat_id, None)
+        bot.send_message(chat_id, "❌ Đã hủy thao tác broadcast.")
+        return
+    
+    users = load_users()
+    
+    if not users:
+        bot.send_message(chat_id, "❌ Không có user nào để gửi tin nhắn!")
+        user_states.pop(chat_id, None)
+        return
+    
+    # Confirm broadcast
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        types.InlineKeyboardButton("✅ Xác nhận gửi", callback_data="confirm_broadcast"),
+        types.InlineKeyboardButton("❌ Hủy", callback_data="category_bot")
+    )
+    
+    # Store broadcast message in user state
+    user_states[chat_id]["broadcast_text"] = broadcast_text
+    
+    preview_msg = (
+        f"📢 <b>Xác nhận Broadcast</b>\n\n"
+        f"👥 Số users nhận: {len(users)}\n\n"
+        f"📝 <b>Nội dung tin nhắn:</b>\n"
+        f"{'─' * 30}\n"
+        f"{broadcast_text}\n"
+        f"{'─' * 30}\n\n"
+        f"⚠️ Bạn có chắc muốn gửi tin nhắn này đến tất cả users?"
+    )
+    
+    bot.send_message(chat_id, preview_msg, reply_markup=markup, parse_mode="HTML")
+
+@bot.callback_query_handler(func=lambda call: call.data == "confirm_broadcast")
+def handle_confirm_broadcast(call):
+    """Handle confirmed broadcast"""
+    chat_id = call.message.chat.id
+    
+    if chat_id not in user_states or "broadcast_text" not in user_states[chat_id]:
+        bot.answer_callback_query(call.id, "❌ Phiên làm việc đã hết hạn!")
+        return
+    
+    broadcast_text = user_states[chat_id]["broadcast_text"]
+    users = load_users()
+    
+    # Update status message
+    status_msg = bot.edit_message_text(
+        "🔄 <b>Đang gửi tin nhắn...</b>\n\n"
+        f"📊 Tiến trình: 0/{len(users)}",
+        chat_id,
+        call.message.id,
+        parse_mode="HTML"
+    )
+    
+    success_count = 0
+    failed_count = 0
+    
+    for i, user_id in enumerate(users, 1):
+        try:
+            bot.send_message(user_id, broadcast_text, parse_mode="HTML")
+            success_count += 1
+        except Exception as e:
+            failed_count += 1
+            print(f"[BROADCAST ERROR] Failed to send to {user_id}: {e}")
+        
+        # Update progress every 10 users
+        if i % 10 == 0:
+            try:
+                bot.edit_message_text(
+                    f"🔄 <b>Đang gửi tin nhắn...</b>\n\n"
+                    f"📊 Tiến trình: {i}/{len(users)}\n"
+                    f"✅ Thành công: {success_count}\n"
+                    f"❌ Thất bại: {failed_count}",
+                    chat_id,
+                    status_msg.message_id,
+                    parse_mode="HTML"
+                )
+            except:
+                pass
+    
+    # Final result
+    result_msg = (
+        f"✅ <b>Hoàn tất broadcast!</b>\n\n"
+        f"📊 <b>Thống kê:</b>\n"
+        f"• Tổng users: {len(users)}\n"
+        f"• Thành công: {success_count}\n"
+        f"• Thất bại: {failed_count}\n\n"
+        f"📝 <b>Nội dung đã gửi:</b>\n"
+        f"{broadcast_text}"
+    )
+    
+    bot.edit_message_text(result_msg, chat_id, status_msg.message_id, parse_mode="HTML")
+    
+    # Notify main admin
+    tg_msg = f"📢 <b>Broadcast hoàn tất</b>\n✅ {success_count}/{len(users)} users nhận được tin nhắn"
+    send_telegram(tg_msg)
+    
+    user_states.pop(chat_id, None)
     bot.answer_callback_query(call.id)
 
 # =================== Bot Polling ===================

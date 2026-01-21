@@ -21,6 +21,10 @@ def sync_keys_from_github():
         'data/prices/prices.json': 'data/prices/prices.json',
         # Coupons
         'data/coupon/coupons.json': 'data/coupon/coupons.json',
+        # Admins
+        'data/admin/admin.json': 'data/admin/admin.json',
+        # Users
+        'data/users/users.json': 'data/users/users.json',
     }
     
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
