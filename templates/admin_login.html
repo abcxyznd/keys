@@ -214,6 +214,24 @@
             cursor: not-allowed;
         }
 
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            color: rgba(0, 0, 0, 0.8);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.4);
+            border-color: rgba(0, 0, 0, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary:active:not(:disabled) {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(0);
+        }
+
         .alert {
             padding: 12px 14px;
             border-radius: 8px;
@@ -483,11 +501,17 @@
                 <button type="submit" class="btn btn-primary" id="sendOtpBtn">
                     Gửi mã OTP
                 </button>
-                <div class="password-fallback" style="margin-top: 12px; text-align: center; display: none;" id="passwordFallback">
-                    <a href="#" id="usePasswordLink" style="color: rgba(0, 0, 0, 0.6); font-size: 13px; text-decoration: none; font-weight: 500;">
-                        <i class="fas fa-key"></i> Dùng Password?
-                    </a>
+                
+                <!-- Divider -->
+                <div style="margin: 20px 0; text-align: center; position: relative;">
+                    <div style="height: 1px; background: rgba(0,0,0,0.1); position: absolute; width: 100%; top: 50%; transform: translateY(-50%);"></div>
+                    <span style="background: rgba(255,255,255,0.8); padding: 0 16px; font-size: 12px; color: rgba(0,0,0,0.5); font-weight: 500;">HOẶC</span>
                 </div>
+                
+                <!-- Password Option -->
+                <button type="button" class="btn btn-secondary" id="usePasswordBtn">
+                    <i class="fas fa-key"></i> Đăng nhập bằng Password
+                </button>
             </form>
         </div>
 
@@ -796,8 +820,8 @@
             timerDiv.textContent = '';
         });
 
-        // Password fallback toggle
-        document.getElementById('usePasswordLink').addEventListener('click', (e) => {
+        // Password option toggle
+        document.getElementById('usePasswordBtn').addEventListener('click', (e) => {
             e.preventDefault();
             emailSection.style.display = 'none';
             document.getElementById('passwordSection').style.display = 'block';
@@ -810,7 +834,6 @@
             document.getElementById('passwordSection').style.display = 'none';
             emailSection.style.display = 'block';
             document.getElementById('password').value = '';
-            document.getElementById('passwordFallback').style.display = 'none';
         });
 
         // Password login handler
