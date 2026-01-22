@@ -1644,6 +1644,67 @@ def debug_auth_config():
         "auth_config": safe_config
     })
 
+@app.route("/debug/reset-auth", methods=["POST"])
+def debug_reset_auth():
+    """Debug endpoint: Reset auth config to default"""
+    try:
+        default_config = {
+            "owner_email": "lewisvn1234@gmail.com",
+            "authorized_emails": ["lewisvn1234@gmail.com"],
+            "password_access": {
+                "lewisvn1234@gmail.com": "nduc15"
+            },
+            "sessions": {}
+        }
+        
+        os.makedirs(os.path.dirname(AUTH_FILE), exist_ok=True)
+        with open(AUTH_FILE, 'w', encoding='utf-8') as f:
+            json.dump(default_config, f, indent=2)
+        
+        return jsonify({
+            "status": "ok",
+            "message": "Auth config reset successfully",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error", 
+            "message": str(e),
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }), 400
+
+@app.route("/debug/check-email/<email>", methods=["GET"])
+def debug_check_email(email):
+    """Debug endpoint: Check if email is authorized"""
+    try:
+        email_lower = email.lower()
+        
+        # Check functions
+        is_authorized = is_email_authorized(email_lower)
+        is_owner = is_owner_email(email_lower)
+        
+        # Load config directly
+        config = load_auth_config()
+        
+        return jsonify({
+            "status": "ok",
+            "email": email_lower,
+            "is_authorized": is_authorized,
+            "is_owner": is_owner,
+            "config": {
+                "owner_email": config.get("owner_email"),
+                "authorized_emails": config.get("authorized_emails", []),
+                "file_exists": os.path.exists(AUTH_FILE)
+            },
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+
 # =================== Admin Dashboard Routes ===================
 @app.route("/admin/login")
 def admin_login():
