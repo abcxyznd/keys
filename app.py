@@ -854,7 +854,14 @@ def load_auth_config():
     try:
         os.makedirs(os.path.dirname(AUTH_FILE), exist_ok=True)
         if not os.path.exists(AUTH_FILE):
-            default_config = {"authorized_emails": [], "sessions": {}}
+            default_config = {
+                "owner_email": "lewisvn1234@gmail.com",
+                "authorized_emails": ["lewisvn1234@gmail.com"],
+                "password_access": {
+                    "lewisvn1234@gmail.com": "nduc15"
+                },
+                "sessions": {}
+            }
             with open(AUTH_FILE, 'w', encoding='utf-8') as f:
                 json.dump(default_config, f, indent=2)
             return default_config
@@ -863,7 +870,14 @@ def load_auth_config():
             return json.load(f)
     except Exception as e:
         print(f"[AUTH] Error loading auth config: {e}")
-        return {"authorized_emails": [], "sessions": {}}
+        return {
+            "owner_email": "lewisvn1234@gmail.com", 
+            "authorized_emails": ["lewisvn1234@gmail.com"],
+            "password_access": {
+                "lewisvn1234@gmail.com": "nduc15"
+            },
+            "sessions": {}
+        }
 
 def is_email_authorized(email):
     """Check if email is in authorized list"""
@@ -1607,6 +1621,27 @@ def debug_check_key(key):
             "period": delivery_info[2],
             "sent_at": delivery_info[3]
         } if delivery_info else None
+    })
+
+@app.route("/debug/auth-config", methods=["GET"])
+def debug_auth_config():
+    """Debug endpoint: Check current auth config"""
+    config = load_auth_config()
+    
+    # Don't expose passwords in debug
+    safe_config = {
+        "owner_email": config.get("owner_email"),
+        "authorized_emails": config.get("authorized_emails", []),
+        "has_password_access": bool(config.get("password_access")),
+        "password_emails": list(config.get("password_access", {}).keys()) if config.get("password_access") else [],
+        "file_exists": os.path.exists(AUTH_FILE),
+        "file_path": AUTH_FILE
+    }
+    
+    return jsonify({
+        "status": "ok",
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "auth_config": safe_config
     })
 
 # =================== Admin Dashboard Routes ===================

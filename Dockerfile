@@ -27,8 +27,8 @@ RUN mkdir -p /app/initial_data && \
 # Ensure data directories exist with write permissions
 RUN mkdir -p /app/data/keys /app/data/coupon /app/data/links /app/data/shortenurl /app/data/prices /app/data/dashboard /app/data/admin /app/data/users /app/data/settings && \
     chmod -R 777 /app/data && \
-    ls -la /app/data/keys/
+    chmod +x /app/init.sh
 
 EXPOSE 8080
 
-CMD ["python", "app.py", "bot.py"]
+CMD ["bash", "/app/init.sh"]
