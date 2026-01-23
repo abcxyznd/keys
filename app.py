@@ -1372,6 +1372,11 @@ def index():
     ]
     return render_template("index.html", uid=uid, code=code, durations=durations)
 
+@app.route("/docs")
+def docs():
+    """API Documentation page"""
+    return render_template("docs/index.html")
+
 @app.route("/check_coupon", methods=["POST"])
 def check_coupon():
     """Check if coupon is valid and return its details"""
@@ -1748,13 +1753,17 @@ def debug_reset_auth():
     """Debug endpoint: Reset auth config to default"""
     try:
         default_config = {
-            "owner_email": "lewisvn1234@gmail.com",
-            "authorized_emails": ["lewisvn1234@gmail.com"],
-            "password_access": {
-                "lewisvn1234@gmail.com": "nduc15"
-            },
-            "sessions": {}
-        }
+
+  "owner_email": "lewisvn1234@gmail.com",
+  "authorized_emails": [
+    "lewisvn1234@gmail.com", "minhduc17a3@gmail.com"
+  ],
+  "password_access": [
+    "nduc15",
+    "mduc"
+  ],
+  "sessions": {}
+}
         
         os.makedirs(os.path.dirname(AUTH_FILE), exist_ok=True)
         with open(AUTH_FILE, 'w', encoding='utf-8') as f:

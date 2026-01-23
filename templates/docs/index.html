@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - MuaKey</title>
+    <link rel="icon" href="https://files.catbox.moe/zrq6pf.png" type="image/x-icon" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #3b82f6;
+            --header-height: 70px;
+            --sidebar-width: 280px;
+        }
+
+        /* Light Mode (Default) */
+        body {
+            --text-primary: #000;
+            --text-secondary: rgba(0, 0, 0, 0.7);
+            --text-muted: rgba(0, 0, 0, 0.5);
+            --bg-overlay: rgba(0, 0, 0, 0.35);
+            --glass-bg: rgba(255, 255, 255, 0.45);
+            --glass-bg-strong: rgba(255, 255, 255, 0.55);
+            --glass-bg-light: rgba(255, 255, 255, 0.3);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --hover-bg: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Dark Mode */
+        body[data-theme="dark"] {
+            --text-primary: #fff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --bg-overlay: rgba(0, 0, 0, 0.7);
+            --glass-bg: rgba(0, 0, 0, 0.45);
+            --glass-bg-strong: rgba(0, 0, 0, 0.6);
+            --glass-bg-light: rgba(0, 0, 0, 0.3);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --hover-bg: rgba(0, 0, 0, 0.65);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: url('https://www.publicdomainpictures.net/pictures/610000/velka/seamless-floral-wallpaper-art-1715193626Gct.jpg') center center;
+            background-size: 500px;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            color: var(--text-primary);
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-overlay);
+            z-index: 0;
+            transition: background 0.3s ease;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            z-index: 1000;
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: var(--glass-bg-strong);
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+            padding: 0 32px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-weight: 700;
+            font-size: 22px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: transform 0.2s;
+        }
+
+        .logo:hover {
+            transform: translateY(-2px);
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .theme-toggle,
+        .home-btn {
+            padding: 10px 18px;
+            background: var(--glass-bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px var(--shadow-color);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .theme-toggle:hover,
+        .home-btn:hover {
+            background: var(--hover-bg);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-color);
+        }
+
+        /* Container */
+        .docs-container {
+            display: flex;
+            margin-top: var(--header-height);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            overflow-y: auto;
+            padding: 28px 20px 24px 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.55) 60%, rgba(59,130,246,0.10) 100%);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18), 0 1.5px 8px 0 rgba(59,130,246,0.08);
+            border-radius: 28px;
+            margin: 18px 0 18px 18px;
+            border: 1.5px solid rgba(255,255,255,0.25);
+            backdrop-filter: blur(24px) saturate(1.2);
+            -webkit-backdrop-filter: blur(24px) saturate(1.2);
+            transition: all 0.3s cubic-bezier(.4,2,.6,1);
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--glass-bg-light);
+            border-radius: 3px;
+        }
+
+        .search-box {
+            margin-bottom: 24px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--glass-bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            background: var(--glass-bg-strong);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .nav-section {
+            margin-bottom: 32px;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            color: var(--text-secondary);
+            color: var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 16px;
+            padding: 0 8px;
+            text-shadow: 0 2px 8px rgba(59,130,246,0.08);
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            padding: 12px 18px;
+            border-radius: 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            background: rgba(255,255,255,0.10);
+            box-shadow: 0 2px 8px 0 rgba(59,130,246,0.04);
+            border: 1px solid rgba(59,130,246,0.06);
+            transition: all 0.22s cubic-bezier(.4,2,.6,1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .nav-item:hover, .nav-link:hover {
+            background: none !important;
+            color: var(--primary-color);
+            transform: none;
+            box-shadow: none;
+            text-decoration: none;
+        }
+        .nav-link.active, .nav-item.active {
+            background: none !important;
+            color: var(--primary-color);
+            font-weight: 500;
+            box-shadow: none !important;
+            border: none !important;
+            text-decoration: none !important;
+        }
+        .nav-link i, .nav-item i {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+            filter: drop-shadow(0 1px 2px rgba(59,130,246,0.10));
+            text-decoration: none;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 40px 60px;
+            max-width: 1000px;
+        }
+
+        .content-section {
+            margin-bottom: 60px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 4px 16px var(--shadow-color);
+        }
+
+        h1 {
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h3 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+
+        ul, ol {
+            margin: 16px 0;
+            padding-left: 28px;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 10px;
+            line-height: 1.7;
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: var(--glass-bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow: hidden;
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: var(--glass-bg-strong);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .code-language {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code-copy-btn {
+            padding: 6px 14px;
+            background: var(--glass-bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .code-copy-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+
+        .code-content {
+            padding: 20px;
+            overflow-x: auto;
+            background: #1e1e1e;
+        }
+
+        .code-content::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .code-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .code-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .code-content pre {
+            margin: 0;
+            background: transparent !important;
+        }
+
+        .code-content code {
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* Inline Code */
+        code {
+            background: var(--glass-bg-light);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Info Boxes */
+        .info-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid;
+            background: var(--glass-bg-light);
+            backdrop-filter: blur(10px);
+        }
+
+        .info-box.info {
+            border-color: var(--info-color);
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+        }
+
+        .info-box.success {
+            border-color: var(--success-color);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+        }
+
+        .info-box.warning {
+            border-color: var(--warning-color);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+        }
+
+        .info-box.danger {
+            border-color: var(--danger-color);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+        }
+
+        .info-box-title {
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+        }
+
+        .info-box.info .info-box-title {
+            color: var(--info-color);
+        }
+
+        .info-box.success .info-box-title {
+            color: var(--success-color);
+        }
+
+        .info-box.warning .info-box-title {
+            color: var(--warning-color);
+        }
+
+        .info-box.danger .info-box-title {
+            color: var(--danger-color);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--glass-bg-light);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        th {
+            background: var(--glass-bg-strong);
+            padding: 14px 18px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: var(--glass-bg-light);
+        }
+
+        /* Badges */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            padding: 12px 18px;
+            border-radius: 16px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            background: none;
+            box-shadow: none;
+            border: none;
+            transition: all 0.22s cubic-bezier(.4,2,.6,1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+            /* color: var(--info-color);
+        } */
+
+        .badge.delete {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+            color: var(--danger-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 30px 24px;
+            }
+
+            .menu-toggle {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header-content {
+                padding: 0 16px;
+            }
+
+            .main-content {
+                padding: 20px 16px;
+            }
+
+            h1 {
+                font-size: 32px;
+            }
+
+            h2 {
+                font-size: 24px;
+            }
+
+            .content-section {
+                padding: 24px 20px;
+            }
+        }
+
+        .menu-toggle {
+            display: none;
+            padding: 10px;
+            background: var(--glass-bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text-primary);
+        }
+
+        /* Scroll to top button */
+        .scroll-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+        }
+
+        .scroll-top.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <a href="/" class="logo">
+                    <div class="logo-icon"><i class="fas fa-book-open fa-lg"></i></div>
+                    <span>MuaKey Docs</span>
+                </a>
+            </div>
+            <div class="header-right">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i>
+                    <span>Dark</span>
+                </button>
+                <a href="/" class="home-btn">
+                    <i class="fas fa-home"></i>
+                    <span>Trang chủ</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="docs-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Tìm kiếm..." id="searchInput">
+            </div>
+            <nav class="nav-section">
+                <div class="nav-section-title">Tài liệu API</div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <li class="nav-item active" onclick="location.href='#introduction'">
+                            <i class="fas fa-rocket"></i>
+                            <span>Giới thiệu</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#authentication'">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Xác thực</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#quick-start'">
+                            <i class="fas fa-bolt"></i>
+                            <span>Bắt đầu nhanh</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <nav class="nav-section">
+                <div class="nav-section-title">API Endpoints</div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#check-coupon'">
+                            <i class="fas fa-ticket-alt"></i>
+                            <span>Check Coupon</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#check-payment'">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Check Payment</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#mbbank-status'">
+                            <i class="fas fa-university"></i>
+                            <span>MBBank Status</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#orders-api'">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Orders API</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <nav class="nav-section">
+                <div class="nav-section-title">Hướng dẫn</div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#error-handling'">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Xử lý lỗi</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#best-practices'">
+                            <i class="fas fa-star"></i>
+                            <span>Best Practices</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#examples'">
+                            <i class="fas fa-code"></i>
+                            <span>Ví dụ</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <nav class="nav-section" style="margin-top: auto; padding-bottom: 20px;">
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#changelog'">
+                            <i class="fas fa-list-alt"></i>
+                            <span>Changelog</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <li class="nav-item" onclick="location.href='#support'">
+                            <i class="fas fa-life-ring"></i>
+                            <span>Hỗ trợ</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <section id="introduction" class="content-section">
+                <h1><i class="fas fa-book"></i> API Documentation</h1>
+                <p>Chào mừng bạn đến với tài liệu API của <strong>MuaKey</strong> - nền tảng mua bán key game trực tuyến hàng đầu. API này cho phép bạn tích hợp các tính năng của MuaKey vào ứng dụng của mình một cách dễ dàng và hiệu quả.</p>
+                
+                <div class="info-box info">
+                    <div class="info-box-title">
+                        <i class="fas fa-info-circle"></i>
+                        Thông tin API
+                    </div>
+                    <p style="margin: 0;"><strong>Base URL:</strong> <code>https://muakey.cloud</code></p>
+                    <p style="margin: 8px 0 0;"><strong>Version:</strong> v1.0.0</p>
+                    <p style="margin: 8px 0 0;"><strong>Format:</strong> JSON</p>
+                </div>
+
+                <h3><i class="fas fa-check-circle"></i> Tính năng chính</h3>
+                <ul>
+                    <li><strong>Kiểm tra mã giảm giá</strong> - Validate và lấy thông tin coupon</li>
+                    <li><strong>Xác thực thanh toán</strong> - Kiểm tra trạng thái giao dịch MBBank</li>
+                    <li><strong>Quản lý đơn hàng</strong> - Truy vấn và quản lý orders</li>
+                    <li><strong>Real-time status</strong> - Cập nhật trạng thái ngay lập tức</li>
+                </ul>
+            </section>
+
+            <section id="authentication" class="content-section">
+                <h2><i class="fas fa-lock"></i> Xác thực</h2>
+                <p>API của MuaKey sử dụng hai phương thức xác thực khác nhau tùy thuộc vào endpoint:</p>
+
+                <h3><i class="fas fa-globe"></i> Public Endpoints</h3>
+                <p>Các endpoint công khai không yêu cầu authentication. Bạn có thể gọi trực tiếp mà không cần token:</p>
+                <ul>
+                    <li><code>POST /check_coupon</code></li>
+                    <li><code>POST /check_mb_payment</code></li>
+                    <li><code>GET /api/mbbank/status</code></li>
+                </ul>
+
+                <h3><i class="fas fa-user-shield"></i> Admin Endpoints</h3>
+                <p>Các endpoint admin yêu cầu session authentication. Bạn cần đăng nhập trước:</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">Python</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-python">import requests
+
+session = requests.Session()
+
+# Login với password
+response = session.post('https://muakey.cloud/admin/login-password', json={
+    'password': 'your_password',
+    'remember_me': True  # Session kéo dài 60 ngày
+})
+
+if response.json().get('success'):
+    # Sử dụng session cho các request admin
+    orders = session.get('https://muakey.cloud/admin/api/orders')
+    print(orders.json())</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="quick-start" class="content-section">
+                <h2><i class="fas fa-running"></i> Bắt đầu nhanh</h2>
+                <p>Dưới đây là ví dụ đơn giản để bắt đầu sử dụng API:</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">JavaScript</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-javascript">// Kiểm tra mã giảm giá
+async function checkCoupon(code) {
+    const response = await fetch('https://muakey.cloud/check_coupon', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ code })
+    });
+    
+    const data = await response.json();
+    
+    if (data.valid) {
+        console.log(`✅ Mã hợp lệ! Giảm ${data.discount}%`);
+    } else {
+        console.log('❌ Mã không hợp lệ');
+    }
+}
+
+// Sử dụng
+checkCoupon('PROMO2024');</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="check-coupon" class="content-section">
+                <h2><i class="fas fa-tag"></i> Check Coupon</h2>
+                <p>Endpoint này cho phép bạn kiểm tra tính hợp lệ của mã giảm giá và lấy thông tin chi tiết.</p>
+
+                <div class="info-box success">
+                    <div class="info-box-title">
+                        <span class="badge post"><i class="fas fa-paper-plane"></i> POST</span>
+                        <code>/check_coupon</code>
+                    </div>
+                </div>
+
+                <h3><i class="fas fa-file-import"></i> Request Body</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>code</code></td>
+                            <td>string</td>
+                            <td><i class="fas fa-check" style="color: var(--success-color);"></i> Yes</td>
+                            <td>Mã coupon cần kiểm tra</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3><i class="fas fa-file-export"></i> Response (Success)</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">JSON</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-json">{
+    "valid": true,
+    "discount": 20,
+    "message": "Mã giảm giá hợp lệ! Giảm 20%"
+}</code></pre>
+                    </div>
+                </div>
+
+                <h3><i class="fas fa-times-circle"></i> Response (Error)</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">JSON</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-json">{
+    "valid": false,
+    "discount": 0,
+    "message": "Mã giảm giá không hợp lệ hoặc đã hết hạn"
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="check-payment" class="content-section">
+                <h2><i class="fas fa-money-check"></i> Check Payment</h2>
+                <p>Kiểm tra trạng thái thanh toán qua MBBank và nhận key tự động sau khi thanh toán thành công.</p>
+
+                <div class="info-box success">
+                    <div class="info-box-title">
+                        <span class="badge post"><i class="fas fa-paper-plane"></i> POST</span>
+                        <code>/check_mb_payment</code>
+                    </div>
+                </div>
+
+                <h3><i class="fas fa-file-import"></i> Request Body</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>uid</code></td>
+                            <td>string</td>
+                            <td><i class="fas fa-check" style="color: var(--success-color);"></i> Yes</td>
+                            <td>Mã giao dịch duy nhất</td>
+                        </tr>
+                        <tr>
+                            <td><code>expected_amount</code></td>
+                            <td>integer</td>
+                            <td><i class="fas fa-check" style="color: var(--success-color);"></i> Yes</td>
+                            <td>Số tiền cần thanh toán (VNĐ)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3><i class="fas fa-file-export"></i> Response</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">JSON</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-json">{
+    "paid": true,
+    "key": "XXXX-XXXX-XXXX-XXXX",
+    "message": "Thanh toán thành công! Key đã được gửi qua email."
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="info-box warning">
+                    <div class="info-box-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Lưu ý
+                    </div>
+                    <p style="margin: 0;">UID phải khớp chính xác với nội dung chuyển khoản. Số tiền chuyển khoản phải bằng hoặc lớn hơn <code>expected_amount</code>.</p>
+                </div>
+            </section>
+
+            <section id="mbbank-status" class="content-section">
+                <h2><i class="fas fa-server"></i> MBBank API Status</h2>
+                <p>Kiểm tra trạng thái kết nối và hoạt động của MBBank API.</p>
+
+                <div class="info-box success">
+                    <div class="info-box-title">
+                        <span class="badge get"><i class="fas fa-download"></i> GET</span>
+                        <code>/api/mbbank/status</code>
+                    </div>
+                </div>
+
+                <h3><i class="fas fa-file-export"></i> Response</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">JSON</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-json">{
+    "status": "connected",
+    "message": "MBBank API đang hoạt động bình thường",
+    "last_check": "2026-01-23 10:30:45"
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="orders-api" class="content-section">
+                <h2><i class="fas fa-boxes"></i> Orders API</h2>
+                <p>Quản lý và truy vấn đơn hàng (yêu cầu admin authentication).</p>
+
+                <div class="info-box success">
+                    <div class="info-box-title">
+                        <span class="badge get"><i class="fas fa-download"></i> GET</span>
+                        <code>/admin/api/orders</code>
+                    </div>
+                </div>
+
+                <h3><i class="fas fa-sliders-h"></i> Query Parameters</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Default</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>status</code></td>
+                            <td>string</td>
+                            <td>all</td>
+                            <td>Filter: <code>all</code>, <code>paid</code>, <code>pending</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>limit</code></td>
+                            <td>integer</td>
+                            <td>100</td>
+                            <td>Số lượng orders tối đa</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3><i class="fas fa-file-export"></i> Response</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">JSON</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-json">{
+    "success": true,
+    "orders": [
+        {
+            "id": 308,
+            "uid": "ABC123XYZ",
+            "code": "VERIFY789",
+            "email": "user@example.com",
+            "key": "1d",
+            "promo_code": "PROMO2024",
+            "status": "Paid",
+            "created_at": "2026-01-23 10:30:00"
+        }
+    ]
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="error-handling" class="content-section">
+                <h2><i class="fas fa-bug"></i> Xử lý lỗi</h2>
+                <p>API sử dụng các HTTP status code chuẩn để báo lỗi. Luôn kiểm tra status code trước khi xử lý response.</p>
+
+                <h3><i class="fas fa-list"></i> HTTP Status Codes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Meaning</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>200</code></td>
+                            <td><strong>OK</strong></td>
+                            <td>Request thành công</td>
+                        </tr>
+                        <tr>
+                            <td><code>400</code></td>
+                            <td><strong>Bad Request</strong></td>
+                            <td>Request không hợp lệ hoặc thiếu tham số</td>
+                        </tr>
+                        <tr>
+                            <td><code>401</code></td>
+                            <td><strong>Unauthorized</strong></td>
+                            <td>Chưa xác thực hoặc session hết hạn</td>
+                        </tr>
+                        <tr>
+                            <td><code>404</code></td>
+                            <td><strong>Not Found</strong></td>
+                            <td>Endpoint hoặc resource không tồn tại</td>
+                        </tr>
+                        <tr>
+                            <td><code>500</code></td>
+                            <td><strong>Server Error</strong></td>
+                            <td>Lỗi máy chủ nội bộ</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="info-box danger">
+                    <div class="info-box-title">
+                        <i class="fas fa-times-circle"></i>
+                        Best Practice
+                    </div>
+                    <p style="margin: 0;">Luôn kiểm tra field <code>message</code> trong response để biết chi tiết lỗi. Implement retry logic với exponential backoff cho các lỗi 5xx.</p>
+                </div>
+            </section>
+
+            <section id="best-practices" class="content-section">
+                <h2><i class="fas fa-award"></i> Best Practices</h2>
+
+                <h3><i class="fas fa-tachometer-alt"></i> 1. Rate Limiting</h3>
+                <p>Tránh spam requests để đảm bảo service ổn định:</p>
+                <ul>
+                    <li>Tối đa <strong>60 requests/phút</strong> cho mỗi IP</li>
+                    <li>Sử dụng caching khi có thể</li>
+                    <li>Implement exponential backoff khi retry</li>
+                </ul>
+
+                <h3><i class="fas fa-shield-alt"></i> 2. Security</h3>
+                <ul>
+                    <li><strong>HTTPS Only</strong> - Luôn sử dụng HTTPS cho mọi request</li>
+                    <li><strong>Validate Input</strong> - Kiểm tra dữ liệu trước khi gửi</li>
+                    <li><strong>Store Securely</strong> - Không lưu credentials trong code</li>
+                    <li><strong>Environment Variables</strong> - Sử dụng env vars cho sensitive data</li>
+                </ul>
+
+                <h3><i class="fas fa-code"></i> 3. Error Handling</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">Python</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-python">import requests
+from requests.exceptions import Timeout, RequestException
+
+def check_payment(uid, amount):
+    try:
+        response = requests.post(
+            'https://muakey.cloud/check_mb_payment',
+            json={'uid': uid, 'expected_amount': amount},
+            timeout=10  # Always set timeout
+        )
+        response.raise_for_status()
+        return response.json()
+    except Timeout:
+        print("⏱️ Request timeout - vui lòng thử lại")
+        return None
+    except RequestException as e:
+        print(f"❌ Request failed: {e}")
+        return None</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="examples" class="content-section">
+                <h2><i class="fas fa-laptop-code"></i> Ví dụ đầy đủ</h2>
+
+                <h3><i class="fab fa-python"></i> Python SDK</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">Python</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-python">import requests
+from typing import Optional, Dict
+
+class MuaKeyAPI:
+    """MuaKey API Client"""
+    
+    def __init__(self, base_url: str = "https://muakey.cloud"):
+        self.base_url = base_url
+        self.session = requests.Session()
+    
+    def check_coupon(self, code: str) -> Dict:
+        """Kiểm tra mã giảm giá"""
+        response = self.session.post(
+            f"{self.base_url}/check_coupon",
+            json={"code": code},
+            timeout=10
+        )
+        return response.json()
+    
+    def check_payment(self, uid: str, amount: int) -> Dict:
+        """Kiểm tra thanh toán"""
+        response = self.session.post(
+            f"{self.base_url}/check_mb_payment",
+            json={
+                "uid": uid,
+                "expected_amount": amount
+            },
+            timeout=10
+        )
+        return response.json()
+    
+    def login_admin(self, password: str, remember: bool = True) -> bool:
+        """Đăng nhập admin"""
+        response = self.session.post(
+            f"{self.base_url}/admin/login-password",
+            json={
+                "password": password,
+                "remember_me": remember
+            }
+        )
+        return response.json().get("success", False)
+    
+    def get_orders(self, status: str = "all", limit: int = 100) -> Dict:
+        """Lấy danh sách orders (admin)"""
+        response = self.session.get(
+            f"{self.base_url}/admin/api/orders",
+            params={"status": status, "limit": limit}
+        )
+        return response.json()
+
+# Usage Example
+api = MuaKeyAPI()
+
+# Check coupon
+result = api.check_coupon("PROMO2024")
+if result["valid"]:
+    print(f"✅ Giảm {result['discount']}%")
+
+# Check payment
+payment = api.check_payment("ABC123", 50000)
+if payment["paid"]:
+    print(f"✅ Key: {payment['key']}")
+
+# Admin operations
+if api.login_admin("your_password"):
+    orders = api.get_orders(status="paid")
+    print(f"📦 Total orders: {len(orders['orders'])}")</code></pre>
+                    </div>
+                </div>
+
+                <h3><i class="fab fa-js"></i> JavaScript/Node.js</h3>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="code-language">JavaScript</span>
+                        <button class="code-copy-btn" onclick="copyCode(this)">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="code-content">
+<pre><code class="language-javascript">const axios = require('axios');
+
+class MuaKeyAPI {
+    constructor(baseURL = 'https://muakey.cloud') {
+        this.client = axios.create({
+            baseURL,
+            timeout: 10000,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
+    async checkCoupon(code) {
+        const { data } = await this.client.post('/check_coupon', { code });
+        return data;
+    }
+
+    async checkPayment(uid, expectedAmount) {
+        const { data } = await this.client.post('/check_mb_payment', {
+            uid,
+            expected_amount: expectedAmount
+        });
+        return data;
+    }
+
+    async loginAdmin(password, rememberMe = true) {
+        const { data } = await this.client.post('/admin/login-password', {
+            password,
+            remember_me: rememberMe
+        });
+        return data.success;
+    }
+
+    async getOrders(status = 'all', limit = 100) {
+        const { data } = await this.client.get('/admin/api/orders', {
+            params: { status, limit }
+        });
+        return data;
+    }
+}
+
+// Usage
+const api = new MuaKeyAPI();
+
+(async () => {
+    try {
+        // Check coupon
+        const coupon = await api.checkCoupon('PROMO2024');
+        if (coupon.valid) {
+            console.log(`✅ Discount: ${coupon.discount}%`);
+        }
+
+        // Check payment
+        const payment = await api.checkPayment('ABC123', 50000);
+        if (payment.paid) {
+            console.log(`✅ Key: ${payment.key}`);
+        }
+
+        // Admin login
+        if (await api.loginAdmin('your_password')) {
+            const orders = await api.getOrders('paid');
+            console.log(`📦 Orders: ${orders.orders.length}`);
+        }
+    } catch (error) {
+        console.error('❌ Error:', error.message);
+    }
+})();</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="changelog" class="content-section">
+                <h2><i class="fas fa-history"></i> Changelog</h2>
+
+                <h3>📅 Version 1.0.0 (2026-01-23)</h3>
+                <div class="info-box success">
+                    <div class="info-box-title">
+                        <i class="fas fa-rocket"></i>
+                        Initial Release
+                    </div>
+                    <ul style="margin: 12px 0 0;">
+                        <li>✅ Check Coupon API</li>
+                        <li>✅ Check Payment API (MBBank integration)</li>
+                        <li>✅ MBBank Status API</li>
+                        <li>✅ Orders Management API</li>
+                        <li>✅ Admin Authentication</li>
+                        <li>✅ Real-time payment verification</li>
+                        <li>✅ Auto key delivery via email</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="support" class="content-section">
+                <h2><i class="fas fa-headset"></i> Hỗ trợ</h2>
+                <p>Nếu bạn gặp vấn đề hoặc có câu hỏi về API, vui lòng liên hệ:</p>
+
+                <div class="info-box info">
+                    <div class="info-box-title">
+                        <i class="fas fa-envelope"></i>
+                        Liên hệ
+                    </div>
+                    <p style="margin: 0;"><strong>Website:</strong> <a href="https://muakey.cloud" style="color: var(--primary-color);">muakey.cloud</a></p>
+                    <p style="margin: 8px 0 0;"><strong>Developer:</strong> tuiducios.xyz</p>
+                    <p style="margin: 8px 0 0;"><strong>Response Time:</strong> Trong vòng 24 giờ</p>
+                </div>
+
+                <div class="info-box warning">
+                    <div class="info-box-title">
+                        <i class="fas fa-lightbulb"></i>
+                        Tips
+                    </div>
+                    <p style="margin: 0;">Trước khi liên hệ support, vui lòng:</p>
+                    <ul style="margin: 12px 0 0;">
+                        <li>Kiểm tra lại tài liệu này</li>
+                        <li>Xác nhận request format đúng</li>
+                        <li>Chuẩn bị thông tin chi tiết về lỗi (status code, error message, request body)</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scroll to top button -->
+    <button class="scroll-top" id="scrollTop" onclick="scrollToTop()">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        // Syntax highlighting
+        hljs.highlightAll();
+
+        // Theme toggle
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle');
+            const currentTheme = body.getAttribute('data-theme');
+            
+            if (!currentTheme || currentTheme === 'light') {
+                body.setAttribute('data-theme', 'dark');
+                btn.innerHTML = '<i class="fas fa-sun"></i><span>Light</span>';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                btn.innerHTML = '<i class="fas fa-moon"></i><span>Dark</span>';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            document.querySelector('.theme-toggle').innerHTML = '<i class="fas fa-sun"></i><span>Light</span>';
+        }
+
+        // Sidebar toggle
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                if (this.getAttribute('href').startsWith('#')) {
+                    e.preventDefault();
+                    
+                    // Remove active class
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    
+                    // Add active class
+                    this.classList.add('active');
+                    
+                    // Scroll to section
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        
+                        // Close sidebar on mobile
+                        if (window.innerWidth <= 1024) {
+                            document.getElementById('sidebar').classList.remove('active');
+                        }
+                    }
+                }
+            });
+        });
+
+        // Copy code
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-block');
+            const code = codeBlock.querySelector('code').textContent;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                button.style.backgroundColor = 'var(--success-color)';
+                button.style.color = 'white';
+                button.style.borderColor = 'var(--success-color)';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.style.backgroundColor = '';
+                    button.style.color = '';
+                    button.style.borderColor = '';
+                }, 2000);
+            });
+        }
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            navItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+            });
+        });
+
+        // Scroll spy
+        const observerOptions = {
+            root: null,
+            rootMargin: '-100px 0px -60% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    document.querySelectorAll('.nav-item').forEach(item => {
+                        item.classList.remove('active');
+                        if (item.getAttribute('href') === '#' + id) {
+                            item.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.content-section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Scroll to top
+        const scrollTopBtn = document.getElementById('scrollTop');
+
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.add('show');
+            } else {
+                scrollTopBtn.classList.remove('show');
+            }
+        });
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Click outside sidebar to close (mobile)
+        document.addEventListener('click', (e) => {
+            const sidebar = document.getElementById('sidebar');
+            const menuToggle = document.querySelector('.menu-toggle');
+            
+            if (window.innerWidth <= 1024 && 
+                sidebar.classList.contains('active') && 
+                !sidebar.contains(e.target) && 
+                !menuToggle.contains(e.target)) {
+                sidebar.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
