@@ -286,7 +286,7 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 DB_FILE = "orders.db"
 AUTH_FILE = "data/dashboard/auth.json"
 
-SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "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")
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "noreply@muakey.cloud")
 
 MB_API_URL = "https://thueapibank.vn/historyapimbbankv2/07bf677194ae4972714f01a3abf58c5f"
