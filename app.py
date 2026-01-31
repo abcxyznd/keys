@@ -289,7 +289,7 @@ AUTH_FILE = "data/dashboard/auth.json"
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "noreply@muakey.cloud")
 
-MB_API_URL = "https://thueapibank.vn/historyapimbbankv2/07bf677194ae4972714f01a3abf58c5f"
+MB_API_URL = "https://thueapibank.vn/historyapimbv3/Ngocduc150109%40/98582233445566/bf188c1ce420f95ddc52ab0f6489025b"
 
 # Tạo folder data/keys nếu chưa tồn tại
 os.makedirs("data/keys", exist_ok=True)
