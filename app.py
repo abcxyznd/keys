@@ -289,7 +289,7 @@ AUTH_FILE = "data/dashboard/auth.json"
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "noreply@muakey.cloud")
 
-MB_API_URL = "https://thueapibank.vn/historyapimbbankv2/07bf677194ae4972714f01a3abf58c5f"
+MB_API_URL = os.environ.get("MB_API_URL", "https://thueapibank.vn/historyapimbv3/Ngocduc150109%40/98582233445566/bf188c1ce420f95ddc52ab0f6489025b")
 
 # Tạo folder data/keys nếu chưa tồn tại
 os.makedirs("data/keys", exist_ok=True)
@@ -307,21 +307,25 @@ def manage_session():
     if 'admin_email' in session:
         admin_email = session.get('admin_email')
         
-        # Verify email is still authorized
-        if not admin_email or not is_email_authorized(admin_email):
+        if not admin_email:
             session.pop('admin_email', None)
             if request.endpoint and request.endpoint.startswith('admin'):
                 return redirect(url_for('admin_login'))
+            return
         
-        # Handle session lifetime based on user preference
+        # Set session lifetime based on user preference (only check once per session)
+        if 'session_lifetime' not in session:
+            session['session_lifetime'] = 'normal'
+        
         session_lifetime = session.get('session_lifetime', 'normal')
         if session_lifetime == 'extended':
             app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=60)
         else:
             app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
         
-        # Refresh session to prevent timeout
+        # Always mark session as permanent
         session.permanent = True
+        session.modified = True
 
 @app.after_request
 def refresh_session(response):
@@ -925,12 +929,17 @@ def load_auth_config():
 
 def is_email_authorized(email):
     """Check if email is in authorized list"""
-    # Temporary bypass for debugging
-    if email.lower() == "lewisvn1234@gmail.com":
-        return True
+    if not email:
+        return False
     
-    config = load_auth_config()
-    return email.lower() in [e.lower() for e in config.get("authorized_emails", [])]
+    try:
+        config = load_auth_config()
+        authorized = config.get("authorized_emails", [])
+        return email.lower() in [e.lower() for e in authorized]
+    except Exception as e:
+        print(f"[AUTH] Error checking authorization: {e}")
+        # If auth check fails, don't kick user out - let session persist
+        return True
 
 def is_owner_email(email):
     """Check if email is the owner"""
@@ -1377,6 +1386,16 @@ def docs():
     """API Documentation page"""
     return render_template("docs/index.html")
 
+# @app.route("/lookup")
+# def lookup_page():
+#     """Trang tra cứu đơn hàng"""
+#     return render_template("lookup.html")
+
+# @app.route("/tracuu")
+# def tracuu_page():
+#     """Trang tra cứu đơn hàng"""
+#     return render_template("tracuu.html")
+
 @app.route("/check_coupon", methods=["POST"])
 def check_coupon():
     """Check if coupon is valid and return its details"""
@@ -1407,8 +1426,81 @@ def check_coupon():
             "message": err_msg or "Mã giảm giá không hợp lệ"
         }), 400
 
-@app.route("/check_mb_payment", methods=["POST"])
-def check_mb_payment():
+@app.route("/api/check_payment_status", methods=["POST"])
+def check_payment_status():
+    """Check if payment exists without sending key yet"""
+    data = request.json
+    uid = data.get("uid")
+    period_code = data.get("period", "30d")
+    amount = int(data.get("amount", 10000))
+    promo_code = data.get("promo_code", "").upper()
+
+    if not uid:
+        return jsonify({"status": "error", "message": "Thiếu thông tin!"}), 400
+
+    order = get_order(uid)
+    if not order:
+        return jsonify({"status": "error", "message": "Không tìm thấy đơn hàng!"}), 404
+
+    code_order = order[4]
+
+    # Check MBBank API for payment
+    try:
+        session_req = requests.Session()
+        session_req.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Accept": "application/json, text/plain, */*",
+            "Connection": "keep-alive"
+        })
+        resp = session_req.get(MB_API_URL, timeout=15)
+        resp.raise_for_status()
+        transactions = resp.json().get("transactions", [])
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Lỗi đọc API MB: {e}"}), 500
+
+    now = datetime.now()
+    found_tx = None
+    
+    # Apply coupon discount
+    discount_percent = 0
+    if promo_code:
+        # Check new coupon system first
+        coupon, err_msg = get_coupon(promo_code)
+        if coupon and is_coupon_valid(coupon, [period_code]):
+            discount_percent = coupon["discount"]
+        else:
+            # Fallback to old promo system
+            promo = get_promo(promo_code)
+            if promo and promo[2] > 0 and (not promo[3] or datetime.fromisoformat(promo[3]) > now):
+                discount_percent = promo[1]
+    
+    final_amount = round(amount * (100 - discount_percent) / 100)
+
+    for tx in transactions:
+        tx_time_str = tx.get("transactionDate", "")
+        tx_content = tx.get("description", "")
+        tx_amount = int(float(tx.get("creditAmount", 0)))
+        
+        if code_order.upper() in tx_content.upper() and tx_amount >= final_amount:
+            try:
+                tx_time = datetime.strptime(tx_time_str, "%d/%m/%Y %H:%M:%S")
+                if (now - tx_time).total_seconds() <= 86400 * 3:  # 3 days
+                    found_tx = tx
+                    break
+            except:
+                continue
+    
+    if found_tx:
+        return jsonify({
+            "status": "paid",
+            "message": "Thanh toán thành công!",
+            "transaction_data": found_tx
+        })
+    else:
+        return jsonify({
+            "status": "pending",
+            "message": "Chưa tìm thấy giao dịch"
+        })
     data = request.json
     uid = data.get("uid")
     email = data.get("email")
@@ -1583,9 +1675,124 @@ def check_mb_payment():
         }
     })
 
+@app.route("/api/lookup_order", methods=["POST"])
+def lookup_order_endpoint():
+    """Lookup order by transaction code"""
+    data = request.json
+    transaction_code = data.get("transaction_code", "").strip().upper()
+    
+    if not transaction_code:
+        return jsonify({"status": "error", "message": "Vui lòng nhập mã giao dịch!"}), 400
+    
+    # Search in orders database
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute(
+        "SELECT uid, email, key, verification_code, paid, created_at FROM orders WHERE verification_code = ? AND paid = 1",
+        (transaction_code,)
+    )
+    order = c.fetchone()
+    conn.close()
+    
+    if order:
+        uid, email, key, verification_code, paid, created_at = order
+        return jsonify({
+            "status": "found",
+            "message": "Tìm thấy đơn hàng!",
+            "data": {
+                "uid": uid,
+                "key": key,
+                "email": email,
+                "created_at": created_at
+            },
+            "key": key
+        })
+    else:
+        return jsonify({
+            "status": "not_found",
+            "message": "Không tìm thấy đơn hàng với mã giao dịch này."
+        })
+
 # =================== API Status Endpoint ===================
-@app.route("/api/mbbank/status", methods=["GET"])
-def mbbank_api_status():
+@app.route("/api/send_key", methods=["POST"])
+def send_key_endpoint():
+    """Send key to email after payment confirmation"""
+    data = request.json
+    uid = data.get("uid")
+    email = data.get("email")
+    period_code = data.get("period", "30d")
+    amount = int(data.get("amount", 10000))
+    promo_code = data.get("promo_code", "").upper()
+
+    if not uid or not email:
+        return jsonify({"status": "error", "message": "Thiếu thông tin!"}), 400
+
+    order = get_order(uid)
+    if not order:
+        return jsonify({"status": "error", "message": "Không tìm thấy đơn hàng!"}), 404
+    
+    if order[6] == 1:  # Already paid
+        return jsonify({"status": "error", "message": "Đơn hàng đã được xử lý!"}), 400
+
+    period_map = {"1d": "1 day", "7d": "7 day", "30d": "30 day", "90d": "90 day"}
+    period = period_map.get(period_code, "30 day")
+
+    # Apply coupon discount
+    discount_percent = 0
+    coupon_used_flag = False
+    is_new_coupon_system = True
+    
+    if promo_code:
+        coupon, err_msg = get_coupon(promo_code)
+        if coupon and is_coupon_valid(coupon, [period_code]):
+            discount_percent = coupon["discount"]
+            coupon_used_flag = True
+        else:
+            promo = get_promo(promo_code)
+            if promo and promo[2] > 0:
+                discount_percent = promo[1]
+                coupon_used_flag = True
+                is_new_coupon_system = False
+
+    final_amount = round(amount * (100 - discount_percent) / 100)
+    
+    # Generate key
+    key = generate_key(period)
+    if not key:
+        return jsonify({"status": "error", "message": "Không tạo được key từ server!"}), 500
+
+    # Send email
+    ok, err = send_key(email, key, uid, period)
+    if not ok:
+        return jsonify({"status": "error", "message": f"Không gửi được email: {err}"}), 500
+
+    # Save to database and mark as paid
+    set_email_key(uid, email, key, promo_code)
+    mark_paid(uid)
+    log_key_delivery(uid, email, key, period, "sent")
+    
+    # Delete key from file
+    success = delete_key_from_file(key, email)
+    if success:
+        print(f"[FLOW] ✅ Key deleted and moved to key_solved.txt")
+    
+    # Use coupon after successful email sending
+    if coupon_used_flag:
+        if is_new_coupon_system:
+            use_coupon(promo_code)
+        else:
+            decrement_promo(promo_code)
+
+    return jsonify({
+        "status": "ok",
+        "message": f"✅ Đã gửi key {key} ({period}) về {email}.",
+        "data": {
+            "key": key,
+            "period": period,
+            "discount_percent": discount_percent,
+            "final_amount": final_amount
+        }
+    })
     """Check MBBank API status"""
     try:
         session_req = requests.Session()

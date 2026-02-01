@@ -2619,6 +2619,85 @@ def handle_confirm_delete_admin_callback(call):
 
 # =================== BOT MANAGEMENT ===================
 
+@bot.message_handler(commands=['tracuu'])
+def tracuu_order(message):
+    """Tra cứu đơn hàng bằng mã giao dịch"""
+    chat_id = message.chat.id
+    args = extract_arguments(message.text).strip().upper()
+    
+    if not args:
+        bot.send_message(chat_id, """
+🔍 **Tra Cứu Đơn Hàng**
+
+Sử dụng lệnh sau để tra cứu đơn hàng:
+`/tracuu MÃ_GIAO_DỊCH`
+
+Ví dụ: `/tracuu ABC123`
+
+Mã giao dịch chính là nội dung chuyển khoản bạn đã dùng khi mua key.
+        """, parse_mode='Markdown')
+        return
+    
+    transaction_code = args
+    
+    try:
+        # Import sqlite3 và kết nối database  
+        import sqlite3
+        
+        # Kết nối tới database orders
+        db_file = os.path.join(os.path.dirname(__file__), 'data', 'orders.db')
+        if not os.path.exists(db_file):
+            bot.send_message(chat_id, "❌ Không tìm thấy database đơn hàng!")
+            return
+            
+        conn = sqlite3.connect(db_file)
+        c = conn.cursor()
+        
+        # Tìm đơn hàng với mã giao dịch
+        c.execute(
+            "SELECT uid, email, key, verification_code, paid, created_at FROM orders WHERE verification_code = ? AND paid = 1",
+            (transaction_code,)
+        )
+        order = c.fetchone()
+        conn.close()
+        
+        if order:
+            uid, email, key, verification_code, paid, created_at = order
+            
+            # Ẩn một phần email và key để bảo mật
+            masked_email = email[:2] + "*" * (len(email.split('@')[0]) - 2) + "@" + email.split('@')[1] if email else "N/A"
+            
+            response = f"""
+✅ **Tìm thấy đơn hàng!**
+
+📋 **Mã đơn hàng:** `{uid}`
+🔑 **Key:** `{key}`
+📧 **Email:** `{masked_email}`
+📅 **Ngày mua:** `{created_at}`
+💳 **Mã giao dịch:** `{verification_code}`
+
+🎉 Key của bạn đã sẵn sàng sử dụng!
+            """
+            
+            bot.send_message(chat_id, response, parse_mode='Markdown')
+        else:
+            bot.send_message(chat_id, f"""
+❌ **Không tìm thấy đơn hàng**
+
+Không tìm thấy đơn hàng với mã giao dịch: `{transaction_code}`
+
+🔍 **Lưu ý:**
+• Đảm bảo bạn đã nhập đúng mã giao dịch
+• Mã giao dịch phải khớp với nội dung chuyển khoản
+• Đơn hàng phải đã được thanh toán thành công
+
+💡 **Cần hỗ trợ?** Liên hệ admin với thông tin giao dịch của bạn.
+            """, parse_mode='Markdown')
+            
+    except Exception as e:
+        print(f"[BOT ERROR] Lookup error: {e}")
+        bot.send_message(chat_id, "❌ Lỗi khi tra cứu đơn hàng. Vui lòng thử lại sau!")
+
 @bot.message_handler(commands=['xemusers'])
 def xem_users(message):
     """View list of user IDs"""

@@ -20,6 +20,11 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: url("{{ url_for('static', filename='img/cursor/mouse-default.png') }}"), auto !important;
+        }
+
+        a, button, select, input[type="submit"], input[type="button"], .nav-item, .logout-btn, .theme-toggle, .sidebar-toggle {
+            cursor: url("{{ url_for('static', filename='img/cursor/mouse-hover.png') }}"), pointer !important;
         }
 
         :root {
