@@ -411,27 +411,21 @@ def load_orders_from_db(status=None, limit=50):
         return []
 
 def get_order_stats_from_db():
-    """Get order statistics from database"""
+    """Get order statistics from oders.json"""
     try:
-        import sqlite3
+        import json
         from datetime import datetime, timedelta
         
-        conn = sqlite3.connect(ORDERS_DB)
-        cursor = conn.cursor()
+        oders_file = "data/keys/oders.json"
+        if not os.path.exists(oders_file):
+            return {'total': 0, 'paid': 0, 'pending': 0}
         
-        # Total orders
-        cursor.execute("SELECT COUNT(*) FROM orders")
-        total = cursor.fetchone()[0]
+        with open(oders_file, "r", encoding="utf-8") as f:
+            orders = json.load(f)
         
-        # Paid orders
-        cursor.execute("SELECT COUNT(*) FROM orders WHERE paid = 1")
-        paid = cursor.fetchone()[0]
-        
-        # Pending orders
-        cursor.execute("SELECT COUNT(*) FROM orders WHERE paid = 0")
-        pending = cursor.fetchone()[0]
-        
-        conn.close()
+        total = len(orders)
+        paid = len([o for o in orders if o.get('status') == 'sent'])
+        pending = 0  # All orders in oders.json are sent
         
         return {
             'total': total,
@@ -2295,6 +2289,8 @@ def sync_data_by_type(data_type):
             'data/keys/key30d.txt': 'data/keys/key30d.txt',
             'data/keys/key90d.txt': 'data/keys/key90d.txt',
             'data/keys/key_solved.txt': 'data/keys/key_solved.txt',
+            'data/keys/keys_solved.json': 'data/keys/keys_solved.json',
+            'data/keys/oders.json': 'data/keys/oders.json',
         },
         "coupon": {
             'data/coupon/coupons.json': 'data/coupon/coupons.json',

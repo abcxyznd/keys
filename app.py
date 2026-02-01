@@ -121,7 +121,7 @@ class GitHubDataManager:
             return False
 
     def delete_key_and_save_solved(self, key_to_delete, email=None):
-        """Delete key from data/keys/*.txt and save to data/keys/key_solved.txt"""
+        """Delete key from data/keys/*.txt and save to data/keys/keys_solved.json"""
         if not self.use_github:
             return False
         
@@ -172,19 +172,27 @@ class GitHubDataManager:
             except Exception as e:
                 print(f"[GITHUB] ⚠️  Exception processing {file_path}: {e}")
         
+        # Save to keys_solved.json instead of txt
         try:
-            solved_file_path = 'data/keys/key_solved.txt'
+            solved_file_path = 'data/keys/keys_solved.json'
             current_content = self._read_file_content(solved_file_path)
             
-            if current_content is None:
-                print(f"[GITHUB] ⚠️  Could not read {solved_file_path}")
-                current_content = ""
+            solved_keys = []
+            if current_content:
+                try:
+                    solved_keys = json.loads(current_content)
+                except:
+                    solved_keys = []
             
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            email_part = f" | {email}" if email else ""
-            new_entry = f"{key_to_delete} | {timestamp}{email_part}\n"
+            timestamp = datetime.now().isoformat()
+            new_entry = {
+                "key": key_to_delete,
+                "timestamp": timestamp,
+                "email": email if email else "N/A"
+            }
             
-            new_content = (current_content + new_entry) if current_content else new_entry
+            solved_keys.append(new_entry)
+            new_content = json.dumps(solved_keys, indent=2, ensure_ascii=False)
             
             if self._write_file_content(
                 solved_file_path,
@@ -313,17 +321,19 @@ def manage_session():
                 return redirect(url_for('admin_login'))
             return
         
-        # Set session lifetime based on user preference (only check once per session)
+        # Ensure session lifetime is maintained based on user preference
         if 'session_lifetime' not in session:
             session['session_lifetime'] = 'normal'
         
+        # Sync PERMANENT_SESSION_LIFETIME with session preference
+        # (This ensures consistency even after app restart)
         session_lifetime = session.get('session_lifetime', 'normal')
         if session_lifetime == 'extended':
             app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=60)
         else:
             app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
         
-        # Always mark session as permanent
+        # Always mark session as permanent to apply the lifetime
         session.permanent = True
         session.modified = True
 
@@ -905,9 +915,10 @@ def load_auth_config():
             default_config = {
                 "owner_email": "lewisvn1234@gmail.com",
                 "authorized_emails": ["lewisvn1234@gmail.com"],
-                "password_access": {
-                    "lewisvn1234@gmail.com": "nduc15"
-                },
+                "password_access": [
+                    "nduc15",
+                    "mduc"
+                ],
                 "sessions": {}
             }
             with open(AUTH_FILE, 'w', encoding='utf-8') as f:
@@ -921,9 +932,10 @@ def load_auth_config():
         return {
             "owner_email": "lewisvn1234@gmail.com", 
             "authorized_emails": ["lewisvn1234@gmail.com"],
-            "password_access": {
-                "lewisvn1234@gmail.com": "nduc15"
-            },
+            "password_access": [
+                "nduc15",
+                "mduc"
+            ],
             "sessions": {}
         }
 
@@ -1167,29 +1179,32 @@ def get_all_dashboard_data():
         return {}
 
 def get_recent_orders(limit=20):
-    """Get recent orders from database"""
+    """Get recent orders from oders.json"""
     try:
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id, uid, verification_code, email, paid, created_at 
-            FROM orders 
-            ORDER BY created_at DESC 
-            LIMIT ?
-        """, (limit,))
-        orders = cursor.fetchall()
-        conn.close()
+        oders_file = "data/keys/oders.json"
+        if not os.path.exists(oders_file):
+            return []
         
+        with open(oders_file, "r", encoding="utf-8") as f:
+            orders = json.load(f)
+        
+        # Sort by timestamp descending
+        orders.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        
+        # Return limited list
         return [
             {
-                'id': o[0],
-                'uid': o[1],
-                'code': o[2],
-                'email': o[3],
-                'status': 'Paid' if o[4] == 1 else 'Pending',
-                'created_at': o[5]
+                'id': i+1,
+                'uid': o.get('uid', 'N/A'),
+                'code': o.get('uid', 'N/A')[:6],
+                'email': o.get('email', 'N/A'),
+                'status': 'Paid' if o.get('status') == 'sent' else 'Pending',
+                'created_at': o.get('timestamp', 'N/A'),
+                'key': o.get('key', 'N/A'),
+                'period': o.get('period', 'N/A'),
+                'amount': o.get('amount', 0)
             }
-            for o in orders
+            for i, o in enumerate(orders[:limit])
         ]
     except Exception as e:
         print(f"[GET ORDERS ERROR] {e}")
@@ -1248,24 +1263,29 @@ def delete_pending_orders(minutes=15):
         return 0
 
 def get_order_stats():
-    """Get order statistics"""
+    """Get order statistics from oders.json"""
     try:
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
+        oders_file = "data/keys/oders.json"
+        if not os.path.exists(oders_file):
+            return {'total': 0, 'paid': 0, 'pending': 0, 'old_pending': 0}
         
-        # Total orders
-        cursor.execute("SELECT COUNT(*) FROM orders")
-        total = cursor.fetchone()[0]
+        with open(oders_file, "r", encoding="utf-8") as f:
+            orders = json.load(f)
         
-        # Paid orders
-        cursor.execute("SELECT COUNT(*) FROM orders WHERE paid = 1")
-        paid = cursor.fetchone()[0]
+        total = len(orders)
+        paid = len([o for o in orders if o.get('status') == 'sent'])
+        pending = 0  # All orders in oders.json are sent
+        old_pending = 0
         
-        # Pending orders
-        cursor.execute("SELECT COUNT(*) FROM orders WHERE paid = 0")
-        pending = cursor.fetchone()[0]
-        
-        # Old pending orders (>15 min)
+        return {
+            'total': total,
+            'paid': paid,
+            'pending': pending,
+            'old_pending': old_pending
+        }
+    except Exception as e:
+        print(f"[ORDER STATS ERROR] {e}")
+        return {'total': 0, 'paid': 0, 'pending': 0, 'old_pending': 0}
         cutoff_time = datetime.now() - timedelta(minutes=15)
         cutoff_str = cutoff_time.strftime('%Y-%m-%d %H:%M:%S')
         cursor.execute("""
@@ -1428,7 +1448,7 @@ def check_coupon():
 
 @app.route("/api/check_payment_status", methods=["POST"])
 def check_payment_status():
-    """Check if payment exists without sending key yet"""
+    """Check if payment exists in MBBank API"""
     data = request.json
     uid = data.get("uid")
     period_code = data.get("period", "30d")
@@ -1436,13 +1456,9 @@ def check_payment_status():
     promo_code = data.get("promo_code", "").upper()
 
     if not uid:
-        return jsonify({"status": "error", "message": "Thiếu thông tin!"}), 400
+        return jsonify({"status": "error", "message": "Thiếu UID!"}), 400
 
-    order = get_order(uid)
-    if not order:
-        return jsonify({"status": "error", "message": "Không tìm thấy đơn hàng!"}), 404
-
-    code_order = order[4]
+    print(f"[PAYMENT CHECK] Checking for UID: {uid}")
 
     # Check MBBank API for payment
     try:
@@ -1476,19 +1492,40 @@ def check_payment_status():
     
     final_amount = round(amount * (100 - discount_percent) / 100)
 
+    print(f"[PAYMENT CHECK] Looking for UID: {uid} | Expected amount: {final_amount}")
+
     for tx in transactions:
+        tx_type = tx.get("type", "")
         tx_time_str = tx.get("transactionDate", "")
         tx_content = tx.get("description", "")
-        tx_amount = int(float(tx.get("creditAmount", 0)))
         
-        if code_order.upper() in tx_content.upper() and tx_amount >= final_amount:
-            try:
-                tx_time = datetime.strptime(tx_time_str, "%d/%m/%Y %H:%M:%S")
-                if (now - tx_time).total_seconds() <= 86400 * 3:  # 3 days
-                    found_tx = tx
-                    break
-            except:
-                continue
+        # Support both "amount" and "creditAmount" fields
+        tx_amount_str = tx.get("amount") or tx.get("creditAmount", "0")
+        tx_amount = int(float(tx_amount_str))
+        
+        # Only check incoming transactions
+        if tx_type != "IN":
+            continue
+        
+        # Check if UID matches (case insensitive)
+        if uid.upper() in tx_content.upper():
+            print(f"[PAYMENT CHECK] ✅ FOUND UID in TX: {tx_content[:100]}")
+            print(f"[PAYMENT CHECK] Amount: {tx_amount} (expected: {final_amount})")
+            
+            if tx_amount >= final_amount:
+                try:
+                    tx_time = datetime.strptime(tx_time_str, "%d/%m/%Y %H:%M:%S")
+                    if (now - tx_time).total_seconds() <= 86400 * 3:  # 3 days
+                        print(f"[PAYMENT CHECK] ✅ PAYMENT CONFIRMED! UID: {uid}")
+                        found_tx = tx
+                        break
+                    else:
+                        print(f"[PAYMENT CHECK] ❌ Transaction too old")
+                except Exception as e:
+                    print(f"[PAYMENT CHECK] ❌ Date parse error: {e}")
+                    continue
+            else:
+                print(f"[PAYMENT CHECK] ❌ Amount mismatch: {tx_amount} < {final_amount}")
     
     if found_tx:
         return jsonify({
@@ -1501,6 +1538,35 @@ def check_payment_status():
             "status": "pending",
             "message": "Chưa tìm thấy giao dịch"
         })
+
+@app.route("/api/create_order", methods=["POST"])
+def create_order():
+    """Create order before payment check"""
+    data = request.json
+    uid = data.get("uid")
+    
+    if not uid:
+        print(f"[CREATE ORDER] ❌ Missing UID in request")
+        return jsonify({"status": "error", "message": "Thiếu UID!"}), 400
+    
+    # Check if order already exists
+    existing_order = get_order(uid)
+    if existing_order:
+        print(f"[CREATE ORDER] ⚠️ Order already exists for UID: {uid} (created at {existing_order[7]})")
+        return jsonify({"status": "ok", "uid": uid, "note": "Order already exists"})
+    
+    # Insert new order into database
+    try:
+        insert_order(uid, uid)
+        print(f"[CREATE ORDER] ✅ New order created for UID: {uid}")
+        return jsonify({"status": "ok", "uid": uid})
+    except Exception as e:
+        print(f"[CREATE ORDER] ❌ Failed to create order: {e}")
+        return jsonify({"status": "error", "message": f"Lỗi tạo đơn: {e}"}), 500
+
+@app.route("/api/send_key", methods=["POST"])
+def send_key_endpoint():
+    """Send key to email after payment confirmation"""
     data = request.json
     uid = data.get("uid")
     email = data.get("email")
@@ -1509,139 +1575,99 @@ def check_payment_status():
     promo_code = data.get("promo_code", "").upper()
 
     if not uid or not email:
+        print(f"[SEND KEY] ❌ Missing UID or email")
         return jsonify({"status": "error", "message": "Thiếu thông tin!"}), 400
 
     period_map = {"1d": "1 day", "7d": "7 day", "30d": "30 day", "90d": "90 day"}
     period = period_map.get(period_code, "30 day")
 
-    order = get_order(uid)
-    if not order:
-        print(f"[ORDER ERROR] Order not found: uid={uid}")
-        return jsonify({"status": "error", "message": "Không tìm thấy đơn hàng! Hãy đợi trong giây lát và ấn lại vào nút 'Nhận Key'"}), 404
-    if order[6] == 1:
-        return jsonify({"status": "ok", "message": "Đã thanh toán trước đó"}), 200
-
-    code_order = order[4]
-
-    # --- FIXED API CALL ---
-    try:
-        session_req = requests.Session()
-        session_req.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-            "Accept": "application/json, text/plain, */*",
-            "Connection": "keep-alive"
-        })
-        resp = session_req.get(MB_API_URL, timeout=15)
-        resp.raise_for_status()
-        transactions = resp.json().get("transactions", [])
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Lỗi đọc API MB: {e}"}), 500
-    # --- END FIXED API CALL ---
-
-    now = datetime.now()
-    found_tx = None
-    code_upper = code_order.upper()
-    
-    for tx in transactions:
-        # Chỉ kiểm tra giao dịch incoming (nhanh nhất)
-        if tx.get("type") != "IN":
-            continue
-
-        # Kiểm tra amount (nhanh, không cần parse)
-        try:
-            # Amount có thể là string với dấu phân cách: "1,000" hoặc "1.000"
-            amount_str = tx.get("amount", "0").replace(",", "").replace(".", "")
-            credit = int(amount_str)
-        except:
-            continue
-        
-        if credit != amount:
-            continue
-            
-        # Kiểm tra code trong description (nhanh)
-        desc = tx.get("description", "").upper()
-        if code_upper not in desc:
-            continue
-
-        # Parse time chỉ khi cần thiết (mất nhiều thời gian)
-        try:
-            tx_time = datetime.strptime(tx["transactionDate"], "%d/%m/%Y %H:%M:%S")
-        except:
-            continue
-
-        # Kiểm tra time (bỏ giao dịch cũ hơn 24h)
-        time_diff = now - tx_time
-        if time_diff >= timedelta(hours=24):
-            continue
-        
-        found_tx = tx
-        break
-
-    if not found_tx:
-        return jsonify({
-            "status": "error",
-            "message": f"⏳ Giao dịch với mã '{code_order}' chưa tìm thấy. Hãy đợi trong khoảng 20 - 30s rồi ấn lại vào nút 'Nhận Key' ✅"
-        }), 400
-
-    # Chuẩn bị base_period cho việc kiểm tra coupon
-    base_period = period_code.replace("_v2", "")
-    
+    # Apply coupon discount
     discount_percent = 0
     coupon_used_flag = False
-    is_new_coupon_system = False  # Đánh dấu coupon là từ system cũ hay mới
+    is_new_coupon_system = True
+    
     if promo_code:
-        # First try new coupon system
-        # Extract base period for coupon validation (remove _v2 suffix)
-        is_valid, err_msg = is_coupon_valid(promo_code, base_period)
-        if is_valid:
-            coupon = get_coupon(promo_code)
+        coupon, err_msg = get_coupon(promo_code)
+        if coupon and is_coupon_valid(coupon, [period_code]):
             discount_percent = coupon["discount"]
-            coupon_used_flag = True  # Đánh dấu để dùng coupon sau khi email gửi thành công
-            is_new_coupon_system = True  # Đánh dấu là new system
+            coupon_used_flag = True
         else:
-            # If coupon system fails, try old promo system
             promo = get_promo(promo_code)
-            if promo:
-                discount_percent = promo["discount"]
-                coupon_used_flag = True  # Đánh dấu để dùng promo sau khi email gửi thành công
-                is_new_coupon_system = False  # Đánh dấu là old system
-            else:
-                return jsonify({
-                    "status": "error",
-                    "message": "Mã giảm giá không hợp lệ hoặc hết hạn"
-                }), 400
+            if promo and promo[2] > 0:
+                discount_percent = promo[1]
+                coupon_used_flag = True
+                is_new_coupon_system = False
 
     final_amount = round(amount * (100 - discount_percent) / 100)
-
+    
+    # Generate key
     key = generate_key(period)
     if not key:
-        return jsonify({
-            "status": "error",
-            "message": "Không tạo được key từ server!"
-        }), 500
+        return jsonify({"status": "error", "message": "Không tạo được key từ server!"}), 500
 
-    # Gửi email TRƯỚC, chỉ lưu + mark paid nếu email gửi thành công
+    # Send email
     ok, err = send_key(email, key, uid, period)
     if not ok:
-        # không lưu, không mark paid, trả lỗi rõ cho client
-        print(f"[FLOW] Email gửi thất bại, dừng xử lý. Err: {err}")
+        print(f"[SEND KEY] ❌ Email failed: {err}")
         return jsonify({"status": "error", "message": f"Không gửi được email: {err}"}), 500
 
-    # nếu tới đây thì email đã gửi thành công -> lưu key, mark paid
-    set_email_key(uid, email, key, promo_code)
-    mark_paid(uid)
+    print(f"[SEND KEY] ✅ Email sent successfully to {email}")
     
-    # Log delivery ngay sau khi email gửi thành công
-    log_key_delivery(uid, email, key, period, "sent")
+    # Save to oders.json
+    oders_file = "data/keys/oders.json"
+    try:
+        # Read existing orders
+        if os.path.exists(oders_file):
+            with open(oders_file, "r", encoding="utf-8") as f:
+                orders = json.load(f)
+        else:
+            orders = []
+        
+        # Add new order
+        order_entry = {
+            "uid": uid,
+            "email": email,
+            "key": key,
+            "period": period,
+            "amount": final_amount,
+            "promo_code": promo_code if promo_code else None,
+            "timestamp": datetime.now().isoformat(),
+            "status": "sent"
+        }
+        orders.append(order_entry)
+        
+        # Save back
+        with open(oders_file, "w", encoding="utf-8") as f:
+            json.dump(orders, f, indent=2, ensure_ascii=False)
+        
+        print(f"[SEND KEY] ✅ Saved to oders.json: {uid}")
+    except Exception as e:
+        print(f"[SEND KEY] ⚠️ Failed to save to oders.json: {e}")
     
-    # Xóa key từ file và lưu vào key_solved.txt sau khi email gửi thành công
-    print(f"[FLOW] Email sent successfully. Now deleting key...")
-    print(f"[FLOW] Key to delete: {key}")
-    success = delete_key_from_file(key, email)  # Truyền key và email vào hàm
+    # Delete key from file and move to key_solved.txt
+    success = delete_key_from_file(key, email)
     if success:
-        print(f"[FLOW] ✅ Key deleted and moved to key_solved.txt")
+        print(f"[SEND KEY] ✅ Key moved to key_solved.txt")
     else:
-        print(f"[FLOW] ⚠️ Warning: Failed to delete key, but email already sent")
+        print(f"[SEND KEY] ⚠️ Failed to delete key (already sent to email)")
+    
+    # Use coupon after successful email sending
+    if coupon_used_flag:
+        if is_new_coupon_system:
+            use_coupon(promo_code)
+        else:
+            decrement_promo(promo_code)
+
+    return jsonify({
+        "status": "ok",
+        "message": f"✅ Đã gửi key {key} ({period}) về {email}.",
+        "data": {
+            "key": key,
+            "period": period,
+            "discount_percent": discount_percent,
+            "final_amount": final_amount
+        }
+    })
     
     # Cập nhật số lượt dùng coupon sau khi email gửi thành công
     if coupon_used_flag:
@@ -1714,85 +1740,8 @@ def lookup_order_endpoint():
         })
 
 # =================== API Status Endpoint ===================
-@app.route("/api/send_key", methods=["POST"])
-def send_key_endpoint():
-    """Send key to email after payment confirmation"""
-    data = request.json
-    uid = data.get("uid")
-    email = data.get("email")
-    period_code = data.get("period", "30d")
-    amount = int(data.get("amount", 10000))
-    promo_code = data.get("promo_code", "").upper()
-
-    if not uid or not email:
-        return jsonify({"status": "error", "message": "Thiếu thông tin!"}), 400
-
-    order = get_order(uid)
-    if not order:
-        return jsonify({"status": "error", "message": "Không tìm thấy đơn hàng!"}), 404
-    
-    if order[6] == 1:  # Already paid
-        return jsonify({"status": "error", "message": "Đơn hàng đã được xử lý!"}), 400
-
-    period_map = {"1d": "1 day", "7d": "7 day", "30d": "30 day", "90d": "90 day"}
-    period = period_map.get(period_code, "30 day")
-
-    # Apply coupon discount
-    discount_percent = 0
-    coupon_used_flag = False
-    is_new_coupon_system = True
-    
-    if promo_code:
-        coupon, err_msg = get_coupon(promo_code)
-        if coupon and is_coupon_valid(coupon, [period_code]):
-            discount_percent = coupon["discount"]
-            coupon_used_flag = True
-        else:
-            promo = get_promo(promo_code)
-            if promo and promo[2] > 0:
-                discount_percent = promo[1]
-                coupon_used_flag = True
-                is_new_coupon_system = False
-
-    final_amount = round(amount * (100 - discount_percent) / 100)
-    
-    # Generate key
-    key = generate_key(period)
-    if not key:
-        return jsonify({"status": "error", "message": "Không tạo được key từ server!"}), 500
-
-    # Send email
-    ok, err = send_key(email, key, uid, period)
-    if not ok:
-        return jsonify({"status": "error", "message": f"Không gửi được email: {err}"}), 500
-
-    # Save to database and mark as paid
-    set_email_key(uid, email, key, promo_code)
-    mark_paid(uid)
-    log_key_delivery(uid, email, key, period, "sent")
-    
-    # Delete key from file
-    success = delete_key_from_file(key, email)
-    if success:
-        print(f"[FLOW] ✅ Key deleted and moved to key_solved.txt")
-    
-    # Use coupon after successful email sending
-    if coupon_used_flag:
-        if is_new_coupon_system:
-            use_coupon(promo_code)
-        else:
-            decrement_promo(promo_code)
-
-    return jsonify({
-        "status": "ok",
-        "message": f"✅ Đã gửi key {key} ({period}) về {email}.",
-        "data": {
-            "key": key,
-            "period": period,
-            "discount_percent": discount_percent,
-            "final_amount": final_amount
-        }
-    })
+@app.route("/api/mbbank/status", methods=["GET"])
+def mbbank_api_status():
     """Check MBBank API status"""
     try:
         session_req = requests.Session()
@@ -1944,7 +1893,7 @@ def debug_auth_config():
         "owner_email": config.get("owner_email"),
         "authorized_emails": config.get("authorized_emails", []),
         "has_password_access": bool(config.get("password_access")),
-        "password_emails": list(config.get("password_access", {}).keys()) if config.get("password_access") else [],
+        "password_count": len(config.get("password_access", [])),
         "file_exists": os.path.exists(AUTH_FILE),
         "file_path": AUTH_FILE
     }
@@ -2128,15 +2077,17 @@ def admin_verify_otp():
         success, message = verify_otp(email, otp)
         
         if success:
-            # Create session
-            session['admin_email'] = email
-            session.permanent = True  # Always set permanent to use PERMANENT_SESSION_LIFETIME
-            
-            # Store session lifetime preference in session itself
+            # Set session lifetime BEFORE creating session
             if remember_me:
+                app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=60)
                 session['session_lifetime'] = 'extended'  # 60 days
             else:
+                app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
                 session['session_lifetime'] = 'normal'    # 24 hours
+            
+            # Create session
+            session['admin_email'] = email
+            session.permanent = True  # Mark session as permanent to use PERMANENT_SESSION_LIFETIME
             
             return jsonify({
                 'success': True,
@@ -2172,15 +2123,17 @@ def admin_login_password():
         # Use owner email for login (since we don't need specific email)
         owner_email = config.get('owner_email', 'lewisvn1234@gmail.com')
         
-        # Create session with owner email
-        session['admin_email'] = owner_email
-        session.permanent = True  # Always set permanent to use PERMANENT_SESSION_LIFETIME
-        
-        # Store session lifetime preference in session itself
+        # Set session lifetime BEFORE creating session
         if remember_me:
+            app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=60)
             session['session_lifetime'] = 'extended'  # 60 days
         else:
+            app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
             session['session_lifetime'] = 'normal'    # 24 hours
+        
+        # Create session with owner email
+        session['admin_email'] = owner_email
+        session.permanent = True  # Mark session as permanent to use PERMANENT_SESSION_LIFETIME
         
         return jsonify({
             'success': True,

@@ -1,4 +1,4 @@
-// Alert box design by Igor Ferrão de Souza
+// Alert box design by Igor Ferrão de Souza: https://www.linkedin.com/in/igor-ferr%C3%A3o-de-souza-4122407b/
 
 function cuteAlert({
   type,
@@ -13,16 +13,18 @@ function cuteAlert({
     setInterval(() => {}, 5000);
     const body = document.querySelector("body");
 
-    // Get the directory path for alert assets
-    let src = "";
     const scripts = document.getElementsByTagName("script");
+    let currScript = "";
+
     for (let script of scripts) {
-      if (script.src.includes("alert.js")) {
-        src = script.src.substring(0, script.src.lastIndexOf("/"));
-        break;
+      if (script.src.includes("cute-alert.js")) {
+        currScript = script;
       }
     }
-    if (!src) src = "/static/alert";
+
+    let src = currScript.src;
+
+    src = src.substring(0, src.lastIndexOf("/"));
 
     let closeStyleTemplate = "alert-close";
     if (closeStyle === "circle") {
@@ -41,60 +43,12 @@ function cuteAlert({
       `;
     }
 
-    // Modern static SVG icons
-    let iconSVG = "";
-    if (type === "success") {
-      iconSVG = `
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="45" fill="#10b981" opacity="0.2"/>
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" stroke-width="4"/>
-          <path d="M25 52 L42 68 L75 32" fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      `;
-    } else if (type === "error") {
-      iconSVG = `
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="45" fill="#ef4444" opacity="0.2"/>
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" stroke-width="4"/>
-          <line x1="32" y1="32" x2="68" y2="68" stroke="#ef4444" stroke-width="6" stroke-linecap="round"/>
-          <line x1="68" y1="32" x2="32" y2="68" stroke="#ef4444" stroke-width="6" stroke-linecap="round"/>
-        </svg>
-      `;
-    } else if (type === "warning") {
-      iconSVG = `
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="45" fill="#f59e0b" opacity="0.2"/>
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#f59e0b" stroke-width="4"/>
-          <line x1="50" y1="30" x2="50" y2="58" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
-          <circle cx="50" cy="70" r="4" fill="#f59e0b"/>
-        </svg>
-      `;
-    } else if (type === "info") {
-      iconSVG = `
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="45" fill="#3b82f6" opacity="0.2"/>
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#3b82f6" stroke-width="4"/>
-          <circle cx="50" cy="35" r="4" fill="#3b82f6"/>
-          <line x1="50" y1="45" x2="50" y2="72" stroke="#3b82f6" stroke-width="6" stroke-linecap="round"/>
-        </svg>
-      `;
-    } else if (type === "question") {
-      iconSVG = `
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="45" fill="#8b5cf6" opacity="0.2"/>
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#8b5cf6" stroke-width="4"/>
-          <path d="M38 38 Q50 28 62 38 Q65 45 62 52 Q58 58 50 60 L50 65" fill="none" stroke="#8b5cf6" stroke-width="5" stroke-linecap="round"/>
-          <circle cx="50" cy="75" r="4" fill="#8b5cf6"/>
-        </svg>
-      `;
-    }
-
     const template = `
     <div class="alert-wrapper">
       <div class="alert-frame">
         <div class="alert-header ${type}-bg">
           <span class="${closeStyleTemplate}">X</span>
-          <div class="alert-img">${iconSVG}</div>
+          <img class="alert-img" src="${src}/img/${type}.svg" />
         </div>
         <div class="alert-body">
           <span class="alert-title">${title}</span>
@@ -156,16 +110,18 @@ function cuteToast({ type, message, timer = 5000 }) {
     }
     const body = document.querySelector("body");
 
-    // Get the directory path for alert assets
-    let src = "";
     const scripts = document.getElementsByTagName("script");
+    let currScript = "";
+
     for (let script of scripts) {
-      if (script.src.includes("alert.js")) {
-        src = script.src.substring(0, script.src.lastIndexOf("/"));
-        break;
+      if (script.src.includes("cute-alert.js")) {
+        currScript = script;
       }
     }
-    if (!src) src = "/static/alert";
+
+    let src = currScript.src;
+
+    src = src.substring(0, src.lastIndexOf("/"));
 
     const template = `
     <div class="toast-container ${type}-bg">

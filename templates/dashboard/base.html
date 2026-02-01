@@ -3459,10 +3459,10 @@
                             <p style="color: var(--text-secondary);">${message}</p>
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <button class="btn btn-secondary ripple cancel-btn">
+                            <button class="popup-btn popup-btn-secondary ripple cancel-btn">
                                 <i class="fas fa-times"></i> Hủy
                             </button>
-                            <button class="btn btn-primary ripple confirm-btn">
+                            <button class="popup-btn popup-btn-primary ripple confirm-btn">
                                 <i class="fas fa-check"></i> OK
                             </button>
                         </div>
@@ -3514,10 +3514,10 @@
                         </div>
                         <input type="text" class="form-control" id="inputDialogValue" placeholder="${placeholder}" style="margin-bottom: 20px;" autofocus>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <button class="btn btn-secondary ripple input-cancel-btn">
+                            <button class="popup-btn popup-btn-secondary ripple input-cancel-btn">
                                 <i class="fas fa-times"></i> Hủy
                             </button>
-                            <button class="btn btn-primary ripple input-submit-btn" id="inputDialogSubmit">
+                            <button class="popup-btn popup-btn-primary ripple input-submit-btn" id="inputDialogSubmit">
                                 <i class="fas fa-check"></i> OK
                             </button>
                         </div>
@@ -3600,7 +3600,7 @@
                 // Add cancel handler
                 const overlay = document.querySelector('.popup-overlay');
                 if (overlay) {
-                    const cancelBtn = overlay.querySelector('.btn-secondary');
+                    const cancelBtn = overlay.querySelector('.popup-btn-secondary');
                     if (cancelBtn) {
                         cancelBtn.onclick = () => {
                             closePopup(() => resolve(false));

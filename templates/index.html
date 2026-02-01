@@ -46,25 +46,25 @@ html,body{
   color: var(--text-color);
   cursor: auto;
   transition: background-color 0.3s ease, color 0.3s ease;
-  /* Checkerboard pattern - larger and more visible */
+  /* Elegant checkered pattern */
   background-image: 
-    linear-gradient(45deg, rgba(0, 212, 255, 0.08) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(0, 212, 255, 0.08) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(0, 212, 255, 0.08) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(0, 212, 255, 0.08) 75%);
-  background-size: 40px 40px;
-  background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+    linear-gradient(45deg, rgba(100, 100, 111, 0.03) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(100, 100, 111, 0.03) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(100, 100, 111, 0.03) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(100, 100, 111, 0.03) 75%);
+  background-size: 50px 50px;
+  background-position: 0 0, 0 25px, 25px -25px, -25px 0px;
 }
 
 [data-theme="dark"] html,
 [data-theme="dark"] body {
   background-image: 
-    linear-gradient(45deg, rgba(0, 212, 255, 0.12) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(0, 212, 255, 0.12) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(0, 212, 255, 0.12) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(0, 212, 255, 0.12) 75%);
-  background-size: 40px 40px;
-  background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+    linear-gradient(45deg, rgba(0, 212, 255, 0.04) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(0, 212, 255, 0.04) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(0, 212, 255, 0.04) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(0, 212, 255, 0.04) 75%);
+  background-size: 50px 50px;
+  background-position: 0 0, 0 25px, 25px -25px, -25px 0px;
 }
 
 body{
@@ -160,6 +160,18 @@ body{
   flex: 1;
   text-align: center;
   white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .nav-btn {
+    padding: 0 10px;
+    font-size: 11px;
+    height: 32px;
+  }
+  .nav-btn i {
+    font-size: 12px;
+    margin-right: 4px;
+  }
 }
 
 [data-theme="dark"] .nav-btn {
@@ -541,10 +553,20 @@ label,.text1{
 
 /* Video */
 .video{
-  max-width:100%;width:100%;height:auto;
-  margin:12px 0;border-radius:14px;
+  max-width:600px;
+  width:100%;
+  height:auto;
+  margin:12px auto;
+  display:block;
+  border-radius:14px;
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .video {
+    max-width: 100%;
+  }
 }
 
 [data-theme="dark"] .video{
@@ -1038,10 +1060,7 @@ label,.text1{
   border:3px solid rgba(0,212,255,0.1);
   border-top:3px solid #00d4ff;
 }
-@keyframes spin{
-  0%{transform:rotate(0deg);}
-  100%{transform:rotate(360deg);}
-}
+
 .loading-text{
   font-size:24px;font-weight:700;
   color: #0066cc;
@@ -1088,10 +1107,7 @@ label,.text1{
 .modal-overlay.show{
   display:flex;
 }
-@keyframes fadeIn{
-  from{opacity:0;}
-  to{opacity:1;}
-}
+
 .modal-box{
   background:linear-gradient(145deg, rgba(15,20,35,0.98), rgba(10,15,25,0.98));
   border:1px solid rgba(0,212,255,0.3);
@@ -1102,10 +1118,7 @@ label,.text1{
   animation:slideUp 0.3s ease;
   position:relative;
 }
-@keyframes slideUp{
-  from{transform:translateY(30px);opacity:0;}
-  to{transform:translateY(0);opacity:1;}
-}
+
 .modal-icon{
   width:60px;height:60px;
   margin:0 auto 20px;
@@ -1223,7 +1236,7 @@ label,.text1{
           <div class="terminal-dot yellow"></div>
           <div class="terminal-dot green"></div>
         </div>
-        <div class="terminal-title">muakey.cloud@localhost :~$</div>
+        <!-- <div class="terminal-title">muakey.cloud@localhost :~$</div> -->
       </div>
       <div class="terminal-body" id="terminal" aria-live="polite"></div>
     </div>
@@ -1244,19 +1257,54 @@ label,.text1{
       </div>
       <div class="guide-content" id="guideContent">
         <div class="guide-body">
-          <video class="video" controls autoplay muted playsinline>
-            <source src="https://github.com/WeansHHN/me/raw/refs/heads/main/support.mp4" type="video/mp4">
-            Trình duyệt của bạn không hỗ trợ video.
-          </video>
+          <!-- Hướng dẫn bằng text -->
+          <div style="text-align:left;margin:0;font-size:14px;line-height:1.8;color:var(--text-color);">
+            <h3 style="margin-bottom:16px;font-size:16px;font-weight:700;color:#10b981;">📖 Hướng Dẫn Sử Dụng</h3>
+            
+            <div style="margin-bottom:12px;">
+              <strong style="color:#3b82f6;">Bước 1:</strong> Chọn gói key phù hợp (1 ngày, 7 ngày, 30 ngày, 90 ngày)
+            </div>
+            
+            <div style="margin-bottom:12px;">
+              <strong style="color:#3b82f6;">Bước 2:</strong> Nhập mã giảm giá (nếu có) và nhấn "Áp dụng"
+            </div>
+            
+            <div style="margin-bottom:12px;">
+              <strong style="color:#3b82f6;">Bước 3:</strong> Nhấn nút "Thanh toán" để tạo QR chuyển khoản
+            </div>
+            
+            <div style="margin-bottom:12px;">
+              <strong style="color:#3b82f6;">Bước 4:</strong> Quét mã QR và chuyển khoản đúng nội dung
+            </div>
+            
+            <div style="margin-bottom:12px;">
+              <strong style="color:#3b82f6;">Bước 5:</strong> Hệ thống tự động kiểm tra → Nhập email nhận key
+            </div>
+            
+            <div style="margin-bottom:20px;">
+              <strong style="color:#3b82f6;">Bước 6:</strong> Check email và sử dụng key đã nhận được
+            </div>
 
-          <div style="text-align:left;margin-top:16px;font-size:13px;color:#94a3b8;line-height:1.7;">
+            <!-- Button xem video hướng dẫn -->
+            <a href="https://github.com/WeansHHN/me/raw/refs/heads/main/support.mp4" 
+               target="_blank" 
+               class="btn-glass" 
+               style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;margin-bottom:16px;text-decoration:none;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Xem Video Hướng Dẫn Chi Tiết
+            </a>
+          </div>
+
+          <div style="text-align:left;margin-top:20px;padding-top:20px;border-top:1px solid var(--border-color);font-size:13px;color:#94a3b8;line-height:1.7;">
             <div class="flex items-center gap-2 mb-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                 <line x1="12" y1="9" x2="12" y2="13"></line>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
               </svg>
-              <span style="color:#fbbf24;font-weight:600;">Lưu ý xem kỹ video!</span>
+              <span style="color:#fbbf24;font-weight:600;">Lưu ý quan trọng!</span>
             </div>
             <p style="margin-bottom:12px;">Bất kì thắc mắc nào liên hệ:</p>
             <div class="flex gap-2">
@@ -1401,15 +1449,24 @@ label,.text1{
       
       <div class="payment-status">
         <div class="payment-code">
-          <span style="font-size: 13px; color: var(--text-color); font-weight: 500; margin-bottom: 8px; display: block;">Nội dung chuyển khoản (Bắt buộc):</span>
-          <div class="code-box" style="background: rgba(139, 92, 246, 0.1); border: 2px dashed #8b5cf6; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-            <span id="popupTransferCode" style="font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700; color: #8b5cf6; letter-spacing: 3px;"></span>
-            <button class="btn-glass btn-icon" onclick="copyText('popupTransferCode')" style="padding: 8px; background: rgba(139, 92, 246, 0.15);">
+          <span style="font-size: 13px; color: var(--text-color); font-weight: 500; margin-bottom: 8px; display: block; text-align: center;">Nội dung chuyển khoản (Bắt buộc):</span>
+          <div class="code-box" style="background: rgba(139, 92, 246, 0.1); border: 2px dashed #8b5cf6; border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; position: relative;">
+            <span id="popupTransferCode" style="font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700; color: #8b5cf6; letter-spacing: 3px; text-align: center;"></span>
+            <button class="btn-glass btn-icon" onclick="copyText('popupTransferCode')" style="padding: 8px; background: rgba(139, 92, 246, 0.15); position: absolute; right: 12px;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
             </button>
+          </div>
+          <div style="text-align: center; margin-bottom: 16px;">
+            <small style="color: #f59e0b; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              Mã hết hạn sau: <span id="codeCountdown" style="color: #ef4444; font-weight: 700; font-size: 13px; min-width: 42px; display: inline-block; text-align: left;">15:00</span>
+            </small>
           </div>
         </div>
         
@@ -1417,41 +1474,95 @@ label,.text1{
           <div class="loading-spinner"></div>
           <span id="paymentStatusText">Đang chờ tiến hành...</span>
         </div>
-        
-        <small style="color: #888; margin-top: 10px; font-size: 12px;">Lưu ý: Không tắt tab này cho đến khi nhận được key qua email của bạn khi đã nhập</small>
       </div>
     </div>
   </div>
 
   <!-- Email Input Popup -->
   <div id="emailInputPopup" class="payment-popup" style="display: none;">
-    <div class="payment-popup-content">
+    <div class="payment-popup-content" style="max-width: 500px;">
       <button class="popup-close-btn" id="closeEmailPopup">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
-      <div class="payment-header">
-        <div class="payment-icon success">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="#10B981"/>
-            <path d="M9.5 17.5L5 13l1.41-1.41L9.5 14.67l7.09-7.09L18 9l-8.5 8.5z" fill="white"/>
+      
+      <!-- Success Icon -->
+      <div style="text-align: center; padding: 30px 30px 20px;">
+        <div class="payment-icon success" style="margin: 0 auto 20px;">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#10B981" opacity="0.2"/>
+            <circle cx="12" cy="12" r="9" fill="#10B981"/>
+            <path d="M8 12.5l2.5 2.5 5-5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3>Thanh toán thành công!</h3>
-        <p>Nhập email để nhận key</p>
+        
+        <h2 style="color: #10B981; font-size: 28px; margin: 0 0 10px; font-weight: 700;">
+          Thanh toán thành công! 🎉
+        </h2>
+        <p style="color: #94a3b8; font-size: 15px; margin: 0;">
+          Nhập email để nhận key kích hoạt của bạn
+        </p>
       </div>
       
-      <div style="padding: 20px 30px;">
-        <input type="email" id="emailForKey" placeholder="📧 Nhập email của bạn" style="width: 100%; margin-bottom: 20px;">
+      <!-- Email Input Section -->
+      <div style="padding: 0 40px 40px;">
+        <div style="position: relative; margin-bottom: 20px;">
+          <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 20px;">📧</span>
+          <input 
+            type="email" 
+            id="emailForKey" 
+            placeholder="example@gmail.com"
+            style="
+              width: 100%;
+              padding: 16px 16px 16px 50px;
+              border: 2px solid rgba(79, 70, 229, 0.2);
+              border-radius: 12px;
+              font-size: 15px;
+              background: rgba(79, 70, 229, 0.05);
+              color: #fff;
+              outline: none;
+              transition: all 0.3s;
+            "
+            onfocus="this.style.borderColor='#4F46E5'; this.style.background='rgba(79, 70, 229, 0.1)'"
+            onblur="this.style.borderColor='rgba(79, 70, 229, 0.2)'; this.style.background='rgba(79, 70, 229, 0.05)'"
+          >
+        </div>
         
-        <button id="sendKeyBtn" class="btn-glass btn-primary w-full">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="m4 4 16 6-8 6-8-12z"></path>
+        <button 
+          id="sendKeyBtn" 
+          class="btn-glass btn-primary" 
+          style="
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(79, 70, 229, 0.3);
+          "
+          onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 15px 40px rgba(79, 70, 229, 0.4)'"
+          onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 10px 30px rgba(79, 70, 229, 0.3)'"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
           </svg>
           Gửi Key Về Email
         </button>
+        
+        <p style="text-align: center; color: #64748b; font-size: 13px; margin: 15px 0 0;">
+          Nếu key không gửi hoặc lỗi gì hãy liên hệ tele @nguyenduc666 để được hỗ trợ!
+        </p>
       </div>
     </div>
   </div>
@@ -1553,18 +1664,48 @@ function toggleTheme() {
   }
 }
 
-// Load saved theme on page load
+// Load saved theme on page load or detect system preference
 (function() {
-  const savedTheme = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', savedTheme);
+  // Check if user has a saved preference, otherwise use system preference
+  let theme = localStorage.getItem('theme');
+  
+  if (!theme) {
+    // Detect system theme preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      theme = 'dark';
+    } else {
+      theme = 'light';
+    }
+  }
+  
+  document.documentElement.setAttribute('data-theme', theme);
   
   const themeIcon = document.getElementById('themeIcon');
   if(themeIcon) {
-    if(savedTheme === 'dark') {
+    if(theme === 'dark') {
       themeIcon.className = 'bx bx-moon';
     } else {
       themeIcon.className = 'bx bx-sun';
     }
+  }
+  
+  // Listen for system theme changes (if user hasn't manually set a preference)
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      // Only auto-switch if user hasn't manually set a preference
+      if (!localStorage.getItem('theme')) {
+        const newTheme = e.matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        
+        if(themeIcon) {
+          if(newTheme === 'dark') {
+            themeIcon.className = 'bx bx-moon';
+          } else {
+            themeIcon.className = 'bx bx-sun';
+          }
+        }
+      }
+    });
   }
 })();
 
@@ -1680,8 +1821,6 @@ function copyTransferInfo(elementId){
 
 setTimeout(typeTick,400);
 
-const uid="{{ uid }}";
-const code="{{ code }}";
 const qrImage=document.getElementById('qrImage');
 const durationSelect=document.getElementById('duration');
 const statusEl=document.getElementById('status');
@@ -1735,32 +1874,8 @@ function updateDurationDisplay(){
 
 const btn=document.getElementById('checkBtn');
 
-function updateQR(amount){
-  const selected=durationSelect.options[durationSelect.selectedIndex];
-  const qrAmount=amount || selected.getAttribute("data-amount");
-  qrImage.src=`https://img.vietqr.io/image/MB-98582233445566-png.png?amount=${qrAmount}&addInfo=${code}&accountName=NGUYEN%20VU%20NGOC%20DUC`;
-}
-
-updateQR();
-durationSelect.addEventListener('change',()=>{
-  updateQR();
-  updateDurationDisplay();
-});
-
-function startCooldown(sec){
-  let time=sec;
-  btn.disabled=true;
-  btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Chờ ${time}s...`;
-  const timer=setInterval(()=>{
-    time--;
-    if(time<=0){ 
-      clearInterval(timer); 
-      btn.disabled=false; 
-      btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg> Nhận Key`; 
-    }
-    else btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Chờ ${time}s...`;
-  },1000);
-}
+// Update duration display when changed
+durationSelect.addEventListener('change', updateDurationDisplay);
 
 testCouponBtn.addEventListener('click',async ()=>{
   const couponCode=couponInput.value.trim().toUpperCase();
@@ -1814,7 +1929,6 @@ testCouponBtn.addEventListener('click',async ()=>{
       couponInfoEl.innerHTML=`✅ Mã hợp lệ! Giảm <strong>${discount}%</strong> | Còn ${c.uses_left} lượt | Thanh toán: <strong>${discountedAmount.toLocaleString()}đ</strong>`;
       couponInfoEl.style.color="#22c55e";
       updateDurationDisplay();
-      updateQR(discountedAmount);
     }else{
       showToast(data.message||'Mã giảm giá không hợp lệ!', 'error');
       couponInfoEl.innerText=`❌ ${data.message||'Mã không hợp lệ'}`;
@@ -1832,7 +1946,7 @@ testCouponBtn.addEventListener('click',async ()=>{
 });
 
 btn.addEventListener('click', async () => {
-  // Generate unique transaction ID
+  // Generate unique transaction ID with 15-minute cooldown
   function generateUID() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let uid = '';
@@ -1842,7 +1956,37 @@ btn.addEventListener('click', async () => {
     return uid;
   }
   
-  const uid = generateUID();
+  // Check for existing UID in cooldown (15 minutes)
+  const cooldownMs = 15 * 60 * 1000; // 15 minutes
+  let uid;
+  const cachedData = localStorage.getItem('paymentUID');
+  
+  if (cachedData) {
+    try {
+      const parsed = JSON.parse(cachedData);
+      const now = Date.now();
+      const timestamp = parsed.timestamp || 0;
+      
+      if (now - timestamp < cooldownMs) {
+        // Reuse existing UID (still in cooldown)
+        uid = parsed.uid;
+        console.log(`[UID] Reusing UID: ${uid} (${Math.floor((cooldownMs - (now - timestamp)) / 1000)}s remaining)`);
+      } else {
+        // Expired, generate new
+        uid = generateUID();
+        localStorage.setItem('paymentUID', JSON.stringify({uid, timestamp: now}));
+        console.log(`[UID] New UID (old expired): ${uid}`);
+      }
+    } catch {
+      uid = generateUID();
+      localStorage.setItem('paymentUID', JSON.stringify({uid, timestamp: Date.now()}));
+    }
+  } else {
+    // No cache, generate new
+    uid = generateUID();
+    localStorage.setItem('paymentUID', JSON.stringify({uid, timestamp: Date.now()}));
+    console.log(`[UID] New UID: ${uid}`);
+  }
   
   // Start payment flow - show waiting popup
   const selected = durationSelect.options[durationSelect.selectedIndex];
@@ -1883,6 +2027,39 @@ btn.addEventListener('click', async () => {
   paymentPopup.style.display = 'flex';
   statusText.innerHTML = 'Đang chờ thanh toán...';
   
+  // Start countdown timer (15 minutes)
+  let countdownSeconds = 900; // 15 minutes
+  const countdownEl = document.getElementById('codeCountdown');
+  
+  const updateCountdown = () => {
+    const minutes = Math.floor(countdownSeconds / 60);
+    const seconds = countdownSeconds % 60;
+    countdownEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (countdownSeconds <= 60) {
+      countdownEl.style.color = '#ef4444'; // Red when less than 1 minute
+    } else if (countdownSeconds <= 180) {
+      countdownEl.style.color = '#f59e0b'; // Orange when less than 3 minutes
+    }
+    
+    countdownSeconds--;
+    
+    if (countdownSeconds < 0) {
+      clearInterval(countdownInterval);
+      clearInterval(checkInterval);
+      statusText.innerHTML = '⏰ Mã đã hết hạn. Vui lòng thử lại!';
+      countdownEl.textContent = '0:00';
+      
+      setTimeout(() => {
+        paymentPopup.style.display = 'none';
+        showToast('Mã thanh toán đã hết hạn', 'error');
+      }, 3000);
+    }
+  };
+  
+  updateCountdown(); // Initial update
+  const countdownInterval = setInterval(updateCountdown, 1000);
+  
   // Start checking for payment
   let checkInterval;
   let attempts = 0;
@@ -1900,9 +2077,23 @@ btn.addEventListener('click', async () => {
       
       const data = await res.json();
       
+      // Handle error status
+      if (data.status === "error") {
+        clearInterval(checkInterval);
+        statusText.innerHTML = '❌ ' + (data.message || 'Lỗi xử lý!');
+        
+        setTimeout(() => {
+          paymentPopup.style.display = 'none';
+          showToast('Vui lòng thử lại', 'error');
+        }, 3000);
+        
+        return;
+      }
+      
       if (data.status === "paid") {
         // Payment found! Clear interval and show email popup
         clearInterval(checkInterval);
+        clearInterval(countdownInterval);
         paymentPopup.style.display = 'none';
         
         // Store payment data for email sending
@@ -1948,6 +2139,7 @@ btn.addEventListener('click', async () => {
   // Close button handler
   document.getElementById('closePaymentPopup').addEventListener('click', () => {
     clearInterval(checkInterval);
+    clearInterval(countdownInterval);
     paymentPopup.style.display = 'none';
   });
   
@@ -1955,6 +2147,7 @@ btn.addEventListener('click', async () => {
   paymentPopup.addEventListener('click', (e) => {
     if (e.target === paymentPopup) {
       clearInterval(checkInterval);
+      clearInterval(countdownInterval);
       paymentPopup.style.display = 'none';
     }
   });
@@ -1979,31 +2172,52 @@ document.getElementById('sendKeyBtn').addEventListener('click', async () => {
     return;
   }
   
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showToast('Email không hợp lệ!', 'error');
+    return;
+  }
+  
   const sendBtn = document.getElementById('sendKeyBtn');
   const originalText = sendBtn.innerHTML;
   
   sendBtn.disabled = true;
-  sendBtn.innerHTML = `<div class="loading-spinner" style="width:16px;height:16px;"></div> Đang gửi...`;
+  sendBtn.innerHTML = `<div class="loading-spinner" style="width:20px;height:20px;border:3px solid rgba(255,255,255,0.3);border-top:3px solid white;"></div> Đang gửi...`;
   
   try {
     const paymentData = window.paymentData;
+    
+    console.log('[SEND KEY] Payment data:', paymentData);
+    console.log('[SEND KEY] Sending to email:', email);
+    
+    const payload = {
+      uid: paymentData.uid,
+      email: email,
+      period: paymentData.period,
+      amount: paymentData.amount,
+      promo_code: paymentData.promo_code || ''
+    };
+    
+    console.log('[SEND KEY] Request payload:', payload);
+    
     const res = await fetch("/api/send_key", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        uid: paymentData.uid,
-        email: email,
-        period: paymentData.period,
-        amount: paymentData.amount,
-        promo_code: paymentData.promo_code
-      })
+      body: JSON.stringify(payload)
     });
     
+    console.log('[SEND KEY] Response status:', res.status);
+    
     const data = await res.json();
+    console.log('[SEND KEY] Response data:', data);
     
     if (data.status === "ok") {
       document.getElementById('emailInputPopup').style.display = 'none';
-      showToast('Key đã được gửi thành công về email của bạn!', 'success', 6000);
+      showToast('✅ Key đã được gửi thành công về ' + email, 'success', 6000);
+      
+      // Clear localStorage after successful send
+      localStorage.removeItem('paymentUID');
       
       // Reset and reload after 3 seconds
       setTimeout(() => {
@@ -2011,14 +2225,15 @@ document.getElementById('sendKeyBtn').addEventListener('click', async () => {
       }, 3000);
     } else {
       showToast(data.message || 'Không thể gửi key. Vui lòng thử lại.', 'error');
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = originalText;
     }
   } catch (error) {
+    console.error('[SEND KEY] Error:', error);
     showToast('Lỗi kết nối server!', 'error');
-    console.error(error);
+    sendBtn.disabled = false;
+    sendBtn.innerHTML = originalText;
   }
-  
-  sendBtn.disabled = false;
-  sendBtn.innerHTML = originalText;
 });
 
 // Email popup close button handler
@@ -2054,86 +2269,6 @@ document.getElementById('proceedToBuyBtn').addEventListener('click', () => {
   btn.click();
 });
 
-// Lookup functionality
-document.getElementById('lookupBtn').addEventListener('click', async () => {
-  const code = document.getElementById('lookupCode').value.trim();
-  
-  if (!code) {
-    showToast('Vui lòng nhập mã giao dịch!', 'warning');
-    return;
-  }
-  
-  const lookupBtn = document.getElementById('lookupBtn');
-  const originalText = lookupBtn.innerHTML;
-  
-  lookupBtn.disabled = true;
-  lookupBtn.innerHTML = `<div class="loading-spinner" style="width:16px;height:16px;"></div> Đang tìm...`;
-  
-  try {
-    const res = await fetch("/api/lookup_order", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ transaction_code: code })
-    });
-    
-    const data = await res.json();
-    
-    if (data.status === "found") {
-      showToast(`Tìm thấy đơn hàng! Key: ${data.key}`, 'success', 10000);
-    } else {
-      showToast(data.message || 'Không tìm thấy đơn hàng với mã này.', 'warning');
-    }
-  } catch (error) {
-    showToast('Lỗi kết nối server!', 'error');
-    console.error(error);
-  }
-  
-  lookupBtn.disabled = false;
-  lookupBtn.innerHTML = originalText;
-});
-
-// Copy function for popup
-function copyText(elementId) {
-  const text = document.getElementById(elementId).textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('Đã copy mã giao dịch!', 'success', 2000);
-  });
-}
-
-// Demo button confirmation modal
-setTimeout(() => {
-  const demoBtn = document.querySelector('a[href="https://install.muakey.cloud/?showDownload=1"]');
-  const modalOverlay = document.getElementById('demoModal');
-  const confirmDemoBtn = document.getElementById('confirmDemoBtn');
-  const cancelDemoBtn = document.getElementById('cancelDemoBtn');
-  
-  if (demoBtn && modalOverlay) {
-    demoBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const demoUrl = demoBtn.getAttribute('href');
-      modalOverlay.classList.add('show');
-      
-      // Set up confirm button
-      confirmDemoBtn.onclick = () => {
-        window.open(demoUrl, '_blank');
-        modalOverlay.classList.remove('show');
-      };
-      
-      // Set up cancel button
-      cancelDemoBtn.onclick = () => {
-        modalOverlay.classList.remove('show');
-      };
-      
-      // Click outside to close
-      modalOverlay.onclick = (e) => {
-        if (e.target === modalOverlay) {
-          modalOverlay.classList.remove('show');
-        }
-      };
-    });
-  }
-}, 100);
-
 // API Status Check
 let apiStatusInterval;
 
@@ -2144,26 +2279,24 @@ async function checkMBBankAPIStatus(){
   if(!statusDot || !statusText) return;
   
   try{
-    const startTime = Date.now();
     const res = await fetch("/api/mbbank/status", {
       method: "GET",
       headers: {"Content-Type": "application/json"},
       signal: AbortSignal.timeout(10000) // 10s timeout
     });
     
-    const responseTime = Date.now() - startTime;
     const data = await res.json();
     
     if(data.status === "ok" || res.ok){
       statusDot.className = 'api-status-dot online';
-      statusText.textContent = `Hoạt động (${responseTime}ms)`;
+      statusText.textContent = 'API';
     }else{
       statusDot.className = 'api-status-dot offline';
-      statusText.textContent = 'Lỗi kết nối';
+      statusText.textContent = 'API';
     }
   }catch(e){
     statusDot.className = 'api-status-dot offline';
-    statusText.textContent = 'Không thể kết nối';
+    statusText.textContent = 'API';
     console.error('API Status Check Error:', e);
   }
 }
