@@ -20,6 +20,9 @@ from functools import wraps
 # Import bot-related functions from bot.py
 from bot import bot, send_telegram, load_coupons, save_coupons, get_coupon, is_coupon_valid, use_coupon, start_bot
 
+# Import Discord webhook logging
+import webhooklog
+
 # =================== GitHub API Helper ===================
 class GitHubDataManager:
     """Manage key and solved key data via GitHub API"""
@@ -111,16 +114,54 @@ class GitHubDataManager:
             
             if response.status_code in [200, 201]:
                 print(f"[GITHUB] ✅ Updated {file_path}")
+                
+                # Log to Discord
+                try:
+                    import webhooklog
+                    webhooklog.log_github_sync(
+                        action=commit_message,
+                        file_path=file_path,
+                        success=True
+                    )
+                except Exception as webhook_err:
+                    print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+                
                 return True
             else:
                 print(f"[GITHUB] ❌ Failed to update {file_path}: {response.status_code}")
                 print(f"[GITHUB] Response: {response.text}")
+                
+                # Log error to Discord
+                try:
+                    import webhooklog
+                    webhooklog.log_github_sync(
+                        action=commit_message,
+                        file_path=file_path,
+                        success=False,
+                        error_msg=f"HTTP {response.status_code}: {response.text[:200]}"
+                    )
+                except Exception as webhook_err:
+                    print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+                
                 return False
         except Exception as e:
             print(f"[GITHUB] ❌ Exception updating file: {e}")
+            
+            # Log error to Discord
+            try:
+                import webhooklog
+                webhooklog.log_github_sync(
+                    action=commit_message,
+                    file_path=file_path,
+                    success=False,
+                    error_msg=str(e)
+                )
+            except Exception as webhook_err:
+                print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+            
             return False
 
-    def delete_key_and_save_solved(self, key_to_delete, email=None):
+    def delete_key_and_save_solved(self, key_to_delete, email=None, uid=None, period=None, prices=None, coupon_used=False, coupon_code=None, discount=0):
         """Delete key from data/keys/*.txt and save to data/keys/keys_solved.json"""
         if not self.use_github:
             return False
@@ -172,7 +213,7 @@ class GitHubDataManager:
             except Exception as e:
                 print(f"[GITHUB] ⚠️  Exception processing {file_path}: {e}")
         
-        # Save to keys_solved.json instead of txt
+        # Save to keys_solved.json with full information
         try:
             solved_file_path = 'data/keys/keys_solved.json'
             current_content = self._read_file_content(solved_file_path)
@@ -188,7 +229,13 @@ class GitHubDataManager:
             new_entry = {
                 "key": key_to_delete,
                 "timestamp": timestamp,
-                "email": email if email else "N/A"
+                "email": email if email else "N/A",
+                "odersid": uid if uid else "N/A",
+                "prices": prices if prices else 0,
+                "period": period if period else "N/A",
+                "couponused": "yes" if coupon_used else "no",
+                "couponcode": coupon_code if coupon_code else "N/A",
+                "discount": discount if discount else 0
             }
             
             solved_keys.append(new_entry)
@@ -297,7 +344,7 @@ AUTH_FILE = "data/dashboard/auth.json"
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "noreply@muakey.cloud")
 
-MB_API_URL = os.environ.get("MB_API_URL", "https://thueapibank.vn/historyapimbv3/Ngocduc150109%40/98582233445566/bf188c1ce420f95ddc52ab0f6489025b")
+MB_API_URL = os.environ.get("MB_API_URL", "")
 
 # Tạo folder data/keys nếu chưa tồn tại
 os.makedirs("data/keys", exist_ok=True)
@@ -652,11 +699,6 @@ def get_key_file_path(period_code):
     file_path = os.path.join("data", "keys", f"key{base_period}.txt")
     return file_path
 
-def get_solved_file_path():
-    """Get correct solved file path"""
-    file_path = os.path.join("data", "keys", "key_solved.txt")
-    return file_path
-
 def generate_uid(length=6):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
@@ -715,9 +757,9 @@ def get_key_from_file(period_code):
             traceback.print_exc()
             return None
 
-def delete_key_from_file(key_to_delete, email=None):
+def delete_key_from_file(key_to_delete, email=None, uid=None, period=None, prices=None, coupon_used=False, coupon_code=None, discount=0):
     """
-    Xóa key cụ thể từ TẤT CẢ file key và lưu vào key_solved.txt
+    Xóa key cụ thể từ TẤT CẢ file key và lưu vào keys_solved.json
     
     Dùng GitHub API nếu có GITHUB_TOKEN, nếu không dùng local files
     """
@@ -732,7 +774,7 @@ def delete_key_from_file(key_to_delete, email=None):
     github_mgr = get_github_manager()
     if github_mgr.use_github:
         print("[DELETE_KEY] 🔄 Using GitHub API to update data...")
-        success = github_mgr.delete_key_and_save_solved(key_to_delete, email)
+        success = github_mgr.delete_key_and_save_solved(key_to_delete, email, uid, period, prices, coupon_used, coupon_code, discount)
         if success:
             print("[DELETE_KEY] ✅ GitHub API update successful")
             return True
@@ -742,7 +784,7 @@ def delete_key_from_file(key_to_delete, email=None):
     # Fallback: Local file operations
     print("[DELETE_KEY] 📁 Using local file operations...")
     
-    solved_file = get_solved_file_path()
+    solved_file = os.path.join("data", "keys", "keys_solved.json")
     keys_dir = os.path.join("data", "keys")
     key_files = ["key1d.txt", "key7d.txt", "key30d.txt", "key90d.txt"]
     
@@ -792,16 +834,39 @@ def delete_key_from_file(key_to_delete, email=None):
             except Exception as e:
                 print(f"[DELETE_KEY] ❌ Error processing {full_path}: {e}")
         
-        # Step 2: Luôn lưu key vào key_solved.txt
+        # Step 2: Luôn lưu key vào keys_solved.json
         print(f"[DELETE_KEY] 💾 Saving key to {solved_file}...")
         solved_dir = os.path.dirname(solved_file)
         os.makedirs(solved_dir, exist_ok=True)
         
         try:
-            with open(solved_file, "a", encoding="utf-8") as f:
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                email_part = f" | {email}" if email else ""
-                f.write(f"{key_to_delete} | {timestamp}{email_part}\n")
+            # Load existing data
+            solved_keys = []
+            if os.path.exists(solved_file):
+                try:
+                    with open(solved_file, "r", encoding="utf-8") as f:
+                        solved_keys = json.load(f)
+                except:
+                    solved_keys = []
+            
+            # Add new entry
+            timestamp = datetime.now().isoformat()
+            new_entry = {
+                "key": key_to_delete,
+                "timestamp": timestamp,
+                "email": email if email else "N/A",
+                "odersid": uid if uid else "N/A",
+                "prices": prices if prices else 0,
+                "period": period if period else "N/A",
+                "couponused": "yes" if coupon_used else "no",
+                "couponcode": coupon_code if coupon_code else "N/A",
+                "discount": discount if discount else 0
+            }
+            solved_keys.append(new_entry)
+            
+            # Save back
+            with open(solved_file, "w", encoding="utf-8") as f:
+                json.dump(solved_keys, f, indent=2, ensure_ascii=False)
                 f.flush()
                 os.fsync(f.fileno())
             print(f"[DELETE_KEY] ✅ Successfully saved to {solved_file}")
@@ -1179,13 +1244,13 @@ def get_all_dashboard_data():
         return {}
 
 def get_recent_orders(limit=20):
-    """Get recent orders from oders.json"""
+    """Get recent orders from keys_solved.json"""
     try:
-        oders_file = "data/keys/oders.json"
-        if not os.path.exists(oders_file):
+        solved_file = "data/keys/keys_solved.json"
+        if not os.path.exists(solved_file):
             return []
         
-        with open(oders_file, "r", encoding="utf-8") as f:
+        with open(solved_file, "r", encoding="utf-8") as f:
             orders = json.load(f)
         
         # Sort by timestamp descending
@@ -1195,14 +1260,14 @@ def get_recent_orders(limit=20):
         return [
             {
                 'id': i+1,
-                'uid': o.get('uid', 'N/A'),
-                'code': o.get('uid', 'N/A')[:6],
+                'uid': o.get('odersid', 'N/A'),
+                'code': str(o.get('odersid', 'N/A'))[:6],
                 'email': o.get('email', 'N/A'),
-                'status': 'Paid' if o.get('status') == 'sent' else 'Pending',
+                'status': 'Paid',
                 'created_at': o.get('timestamp', 'N/A'),
                 'key': o.get('key', 'N/A'),
                 'period': o.get('period', 'N/A'),
-                'amount': o.get('amount', 0)
+                'amount': o.get('prices', 0)
             }
             for i, o in enumerate(orders[:limit])
         ]
@@ -1263,38 +1328,19 @@ def delete_pending_orders(minutes=15):
         return 0
 
 def get_order_stats():
-    """Get order statistics from oders.json"""
+    """Get order statistics from keys_solved.json"""
     try:
-        oders_file = "data/keys/oders.json"
-        if not os.path.exists(oders_file):
+        solved_file = "data/keys/keys_solved.json"
+        if not os.path.exists(solved_file):
             return {'total': 0, 'paid': 0, 'pending': 0, 'old_pending': 0}
         
-        with open(oders_file, "r", encoding="utf-8") as f:
+        with open(solved_file, "r", encoding="utf-8") as f:
             orders = json.load(f)
         
         total = len(orders)
-        paid = len([o for o in orders if o.get('status') == 'sent'])
-        pending = 0  # All orders in oders.json are sent
+        paid = total  # All orders in keys_solved.json are solved/paid
+        pending = 0
         old_pending = 0
-        
-        return {
-            'total': total,
-            'paid': paid,
-            'pending': pending,
-            'old_pending': old_pending
-        }
-    except Exception as e:
-        print(f"[ORDER STATS ERROR] {e}")
-        return {'total': 0, 'paid': 0, 'pending': 0, 'old_pending': 0}
-        cutoff_time = datetime.now() - timedelta(minutes=15)
-        cutoff_str = cutoff_time.strftime('%Y-%m-%d %H:%M:%S')
-        cursor.execute("""
-            SELECT COUNT(*) FROM orders 
-            WHERE paid = 0 AND created_at < ?
-        """, (cutoff_str,))
-        old_pending = cursor.fetchone()[0]
-        
-        conn.close()
         
         return {
             'total': total,
@@ -1472,6 +1518,16 @@ def check_payment_status():
         resp.raise_for_status()
         transactions = resp.json().get("transactions", [])
     except Exception as e:
+        # Log API error to Discord
+        try:
+            webhooklog.log_api_error(
+                api_name="MBBank API",
+                error_msg=str(e),
+                details=f"UID: {uid}, Period: {period_code}, Amount: {amount}"
+            )
+        except Exception as webhook_err:
+            print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+        
         return jsonify({"status": "error", "message": f"Lỗi đọc API MB: {e}"}), 500
 
     now = datetime.now()
@@ -1518,6 +1574,19 @@ def check_payment_status():
                     if (now - tx_time).total_seconds() <= 86400 * 3:  # 3 days
                         print(f"[PAYMENT CHECK] ✅ PAYMENT CONFIRMED! UID: {uid}")
                         found_tx = tx
+                        
+                        # Log to Discord
+                        try:
+                            webhooklog.log_payment_confirmed(
+                                uid=uid,
+                                amount=final_amount,
+                                period=period_code,
+                                promo_code=promo_code if promo_code else None,
+                                tx_details=tx_content
+                            )
+                        except Exception as webhook_err:
+                            print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+                        
                         break
                     else:
                         print(f"[PAYMENT CHECK] ❌ Transaction too old")
@@ -1559,6 +1628,13 @@ def create_order():
     try:
         insert_order(uid, uid)
         print(f"[CREATE ORDER] ✅ New order created for UID: {uid}")
+        
+        # Log to Discord
+        try:
+            webhooklog.log_order_created(uid)
+        except Exception as webhook_err:
+            print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+        
         return jsonify({"status": "ok", "uid": uid})
     except Exception as e:
         print(f"[CREATE ORDER] ❌ Failed to create order: {e}")
@@ -1609,45 +1685,58 @@ def send_key_endpoint():
     ok, err = send_key(email, key, uid, period)
     if not ok:
         print(f"[SEND KEY] ❌ Email failed: {err}")
+        
+        # Log failed key delivery to Discord
+        try:
+            webhooklog.log_key_sent(
+                uid=uid,
+                email=email,
+                key=key,
+                period=period_code,
+                success=False,
+                error_msg=err
+            )
+        except Exception as webhook_err:
+            print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+        
         return jsonify({"status": "error", "message": f"Không gửi được email: {err}"}), 500
 
     print(f"[SEND KEY] ✅ Email sent successfully to {email}")
     
-    # Save to oders.json
-    oders_file = "data/keys/oders.json"
+    # Log successful key delivery to Discord
     try:
-        # Read existing orders
-        if os.path.exists(oders_file):
-            with open(oders_file, "r", encoding="utf-8") as f:
-                orders = json.load(f)
-        else:
-            orders = []
+        webhooklog.log_key_sent(
+            uid=uid,
+            email=email,
+            key=key,
+            period=period_code,
+            success=True
+        )
         
-        # Add new order
-        order_entry = {
-            "uid": uid,
-            "email": email,
-            "key": key,
-            "period": period,
-            "amount": final_amount,
-            "promo_code": promo_code if promo_code else None,
-            "timestamp": datetime.now().isoformat(),
-            "status": "sent"
-        }
-        orders.append(order_entry)
-        
-        # Save back
-        with open(oders_file, "w", encoding="utf-8") as f:
-            json.dump(orders, f, indent=2, ensure_ascii=False)
-        
-        print(f"[SEND KEY] ✅ Saved to oders.json: {uid}")
-    except Exception as e:
-        print(f"[SEND KEY] ⚠️ Failed to save to oders.json: {e}")
+        # Log coupon usage if applicable
+        if coupon_used_flag and promo_code:
+            webhooklog.log_coupon_used(
+                coupon_code=promo_code,
+                uid=uid,
+                discount=discount_percent,
+                period=period_code
+            )
+    except Exception as webhook_err:
+        print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
     
-    # Delete key from file and move to key_solved.txt
-    success = delete_key_from_file(key, email)
+    # Delete key from file and move to keys_solved.json with full info
+    success = delete_key_from_file(
+        key, 
+        email, 
+        uid, 
+        period, 
+        final_amount,
+        coupon_used=coupon_used_flag,
+        coupon_code=promo_code if coupon_used_flag else None,
+        discount=discount_percent
+    )
     if success:
-        print(f"[SEND KEY] ✅ Key moved to key_solved.txt")
+        print(f"[SEND KEY] ✅ Key moved to keys_solved.json with order info")
     else:
         print(f"[SEND KEY] ⚠️ Failed to delete key (already sent to email)")
     
@@ -1666,38 +1755,6 @@ def send_key_endpoint():
             "period": period,
             "discount_percent": discount_percent,
             "final_amount": final_amount
-        }
-    })
-    
-    # Cập nhật số lượt dùng coupon sau khi email gửi thành công
-    if coupon_used_flag:
-        if is_new_coupon_system:
-            # Đây là coupon system mới
-            use_coupon(promo_code)
-        else:
-            # Đây là old promo system từ database
-            decrement_promo(promo_code)
-
-    # LOG INSTEAD OF SENDING TELEGRAM
-    print(f"[ORDER] 🎉 New order!")
-    print(f"[ORDER] UID: {uid}")
-    print(f"[ORDER] Email: {email}")
-    print(f"[ORDER] Key: {key}")
-    print(f"[ORDER] Promo: {promo_code or 'None'}")
-    print(f"[ORDER] Discount: {discount_percent}%")
-    print(f"[ORDER] Amount: {final_amount}đ")
-    print(f"[ORDER] Time: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-
-    return jsonify({
-        "status": "ok",
-        "message": f"✅ Đã gửi key {key} ({period}) về {email}.",
-        "data": {
-            "key": key,
-            "period": period,
-            "original_amount": amount,
-            "discount_percent": discount_percent,
-            "final_amount": final_amount,
-            "promo_code": promo_code
         }
     })
 
@@ -1798,7 +1855,7 @@ def mbbank_api_status():
 def debug_key_status():
     """Debug endpoint: Kiểm tra status của key files và delivery log"""
     keys_dir = os.path.join("data", "keys")
-    key_files = ["key1d.txt", "key7d.txt", "key30d.txt", "key90d.txt", "key_solved.txt"]
+    key_files = ["key1d.txt", "key7d.txt", "key30d.txt", "key90d.txt"]
     
     file_status = {}
     total_keys = 0
@@ -1812,8 +1869,7 @@ def debug_key_status():
                 "line_count": len(lines),
                 "sample": lines[:3] if lines else []  # First 3 lines
             }
-            if key_file != "key_solved.txt":
-                total_keys += len(lines)
+            total_keys += len(lines)
         else:
             file_status[key_file] = {"exists": False}
     

@@ -1,0 +1,14 @@
+{
+  "enabled": false,
+  "interval_minutes": 5,
+  "last_sync": null,
+  "sync_types": {
+    "keys": true,
+    "coupon": true,
+    "prices": true,
+    "links": true,
+    "shortenurl": true,
+    "admin": false,
+    "users": false
+  }
+}

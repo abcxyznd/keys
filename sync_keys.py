@@ -16,7 +16,7 @@ def sync_keys_from_github():
         'data/keys/key7d.txt': 'data/keys/key7d.txt',
         'data/keys/key30d.txt': 'data/keys/key30d.txt',
         'data/keys/key90d.txt': 'data/keys/key90d.txt',
-        'data/keys/key_solved.txt': 'data/keys/key_solved.txt',
+        'data/keys/keys_solved.json': 'data/keys/keys_solved.json',
         # Prices
         'data/prices/prices.json': 'data/prices/prices.json',
         # Coupons

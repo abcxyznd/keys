@@ -2,7 +2,9 @@ import os
 import json
 import requests
 import base64
-from datetime import datetime
+import threading
+import time
+from datetime import datetime, timedelta
 from telebot import TeleBot, types
 from telebot.util import extract_arguments
 
@@ -97,13 +99,51 @@ class GitHubDataManager:
             
             if response.status_code in [200, 201]:
                 print(f"[GITHUB] ✅ Updated {file_path}")
+                
+                # Log to Discord
+                try:
+                    import webhooklog
+                    webhooklog.log_github_sync(
+                        action=commit_message,
+                        file_path=file_path,
+                        success=True
+                    )
+                except Exception as webhook_err:
+                    print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+                
                 return True
             else:
                 print(f"[GITHUB] ❌ Failed to update {file_path}: {response.status_code}")
                 print(f"[GITHUB] Response: {response.text}")
+                
+                # Log error to Discord
+                try:
+                    import webhooklog
+                    webhooklog.log_github_sync(
+                        action=commit_message,
+                        file_path=file_path,
+                        success=False,
+                        error_msg=f"HTTP {response.status_code}: {response.text[:200]}"
+                    )
+                except Exception as webhook_err:
+                    print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+                
                 return False
         except Exception as e:
             print(f"[GITHUB] ❌ Exception updating file: {e}")
+            
+            # Log error to Discord
+            try:
+                import webhooklog
+                webhooklog.log_github_sync(
+                    action=commit_message,
+                    file_path=file_path,
+                    success=False,
+                    error_msg=str(e)
+                )
+            except Exception as webhook_err:
+                print(f"[WEBHOOK] ⚠️ Failed to send Discord notification: {webhook_err}")
+            
             return False
 
     def add_key(self, period, key_value):
@@ -411,21 +451,21 @@ def load_orders_from_db(status=None, limit=50):
         return []
 
 def get_order_stats_from_db():
-    """Get order statistics from oders.json"""
+    """Get order statistics from keys_solved.json"""
     try:
         import json
         from datetime import datetime, timedelta
         
-        oders_file = "data/keys/oders.json"
-        if not os.path.exists(oders_file):
+        solved_file = "data/keys/keys_solved.json"
+        if not os.path.exists(solved_file):
             return {'total': 0, 'paid': 0, 'pending': 0}
         
-        with open(oders_file, "r", encoding="utf-8") as f:
+        with open(solved_file, "r", encoding="utf-8") as f:
             orders = json.load(f)
         
         total = len(orders)
-        paid = len([o for o in orders if o.get('status') == 'sent'])
-        pending = 0  # All orders in oders.json are sent
+        paid = total  # All orders in keys_solved.json are solved/paid
+        pending = 0
         
         return {
             'total': total,
@@ -2288,9 +2328,7 @@ def sync_data_by_type(data_type):
             'data/keys/key7d.txt': 'data/keys/key7d.txt',
             'data/keys/key30d.txt': 'data/keys/key30d.txt',
             'data/keys/key90d.txt': 'data/keys/key90d.txt',
-            'data/keys/key_solved.txt': 'data/keys/key_solved.txt',
             'data/keys/keys_solved.json': 'data/keys/keys_solved.json',
-            'data/keys/oders.json': 'data/keys/oders.json',
         },
         "coupon": {
             'data/coupon/coupons.json': 'data/coupon/coupons.json',
@@ -2350,6 +2388,117 @@ def sync_data_by_type(data_type):
             print(f"[SYNC ERROR] {os.path.basename(local_path)}: {e}")
     
     return True, f"Đồng bộ {success_count}/{len(files_to_sync)} files"
+
+# =================== AUTO SYNC HELPER FUNCTIONS ===================
+
+def load_autosync_settings():
+    """Load auto-sync settings"""
+    try:
+        with open('data/autosync/autosync_settings.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except:
+        # Default settings
+        return {
+            "enabled": False,
+            "interval_minutes": 5,
+            "last_sync": None,
+            "sync_types": {
+                "keys": True,
+                "coupon": True,
+                "prices": True,
+                "links": True,
+                "shortenurl": True,
+                "admin": False,
+                "users": False
+            }
+        }
+
+def save_autosync_settings(settings):
+    """Save auto-sync settings"""
+    try:
+        os.makedirs('data/autosync', exist_ok=True)
+        with open('data/autosync/autosync_settings.json', 'w', encoding='utf-8') as f:
+            json.dump(settings, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"[AUTOSYNC] Error saving settings: {e}")
+        return False
+
+def perform_autosync():
+    """Perform automatic sync based on settings"""
+    try:
+        settings = load_autosync_settings()
+        
+        if not settings.get("enabled", False):
+            return
+        
+        # Determine which data types to sync
+        sync_types = settings.get("sync_types", {})
+        types_to_sync = [dtype for dtype, enabled in sync_types.items() if enabled]
+        
+        if not types_to_sync:
+            return
+        
+        # Sync each enabled type
+        for data_type in types_to_sync:
+            try:
+                sync_data_by_type(data_type)
+                print(f"[AUTOSYNC] ✅ Synced {data_type}")
+            except Exception as e:
+                print(f"[AUTOSYNC] ❌ Error syncing {data_type}: {e}")
+        
+        # Update last sync time
+        settings["last_sync"] = datetime.now().isoformat()
+        save_autosync_settings(settings)
+        
+        # Notify admin if TG_CHAT_ID is set
+        try:
+            if TG_CHAT_ID:
+                sync_summary = "\n".join([f"• {dtype}" for dtype in types_to_sync])
+                msg = f"🔄 <b>Auto-Sync hoàn tất</b>\n\n{sync_summary}"
+                bot.send_message(TG_CHAT_ID, msg, parse_mode="HTML")
+        except:
+            pass
+            
+    except Exception as e:
+        print(f"[AUTOSYNC] Error in perform_autosync: {e}")
+
+def autosync_scheduler():
+    """Background thread for auto-sync scheduler"""
+    print("[AUTOSYNC] Scheduler started")
+    
+    while True:
+        try:
+            settings = load_autosync_settings()
+            
+            if settings.get("enabled", False):
+                interval_minutes = max(5, settings.get("interval_minutes", 5))
+                last_sync = settings.get("last_sync")
+                
+                should_sync = False
+                
+                if last_sync is None:
+                    should_sync = True
+                else:
+                    try:
+                        last_sync_time = datetime.fromisoformat(last_sync)
+                        next_sync_time = last_sync_time + timedelta(minutes=interval_minutes)
+                        
+                        if datetime.now() >= next_sync_time:
+                            should_sync = True
+                    except:
+                        should_sync = True
+                
+                if should_sync:
+                    print(f"[AUTOSYNC] Running auto-sync (interval: {interval_minutes}m)")
+                    perform_autosync()
+            
+            # Check every minute
+            time.sleep(60)
+            
+        except Exception as e:
+            print(f"[AUTOSYNC] Scheduler error: {e}")
+            time.sleep(60)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("sync_"))
 def handle_sync_callback(call):
@@ -2449,6 +2598,9 @@ def sync_data_command(message):
     markup.add(
         types.InlineKeyboardButton("📦 Tất cả", callback_data="sync_all")
     )
+    markup.add(
+        types.InlineKeyboardButton("⚡ Auto-Sync", callback_data="autosync_menu")
+    )
     
     bot.send_message(
         chat_id,
@@ -2456,6 +2608,311 @@ def sync_data_command(message):
         reply_markup=markup,
         parse_mode="HTML"
     )
+
+# =================== AUTO-SYNC CONFIGURATION ===================
+
+@bot.callback_query_handler(func=lambda call: call.data == "autosync_menu")
+def autosync_menu_callback(call):
+    """Show auto-sync configuration menu"""
+    chat_id = call.message.chat.id
+    settings = load_autosync_settings()
+    
+    enabled = settings.get("enabled", False)
+    interval = settings.get("interval_minutes", 5)
+    last_sync = settings.get("last_sync")
+    
+    # Format last sync time
+    last_sync_text = "Chưa có"
+    if last_sync:
+        try:
+            last_sync_dt = datetime.fromisoformat(last_sync)
+            last_sync_text = last_sync_dt.strftime("%d/%m/%Y %H:%M:%S")
+        except:
+            pass
+    
+    # Count enabled sync types
+    sync_types = settings.get("sync_types", {})
+    enabled_count = sum(1 for v in sync_types.values() if v)
+    
+    status_emoji = "✅" if enabled else "❌"
+    status_text = "Đang bật" if enabled else "Đang tắt"
+    
+    msg = (
+        f"⚡ <b>Cài đặt Auto-Sync</b>\n\n"
+        f"📊 <b>Trạng thái:</b> {status_emoji} {status_text}\n"
+        f"⏱️ <b>Khoảng thời gian:</b> {interval} phút\n"
+        f"🔄 <b>Lần sync cuối:</b> {last_sync_text}\n"
+        f"📦 <b>Loại data:</b> {enabled_count}/7\n\n"
+        f"💡 <i>Auto-sync sẽ tự động đồng bộ dữ liệu từ GitHub theo khoảng thời gian đã cài đặt.</i>"
+    )
+    
+    markup = types.InlineKeyboardMarkup(row_width=1)
+    
+    # Toggle enable/disable
+    toggle_text = "❌ Tắt Auto-Sync" if enabled else "✅ Bật Auto-Sync"
+    markup.add(types.InlineKeyboardButton(toggle_text, callback_data="autosync_toggle"))
+    
+    # Configuration options (only show when enabled or for setup)
+    markup.add(types.InlineKeyboardButton("⏱️ Đặt thời gian", callback_data="autosync_settime"))
+    markup.add(types.InlineKeyboardButton("🔄 Reset thời gian", callback_data="autosync_resettime"))
+    markup.add(types.InlineKeyboardButton("📦 Chọn loại data", callback_data="autosync_selectdata"))
+    markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="back_to_syncmenu"))
+    
+    bot.edit_message_text(msg, chat_id, call.message.id, reply_markup=markup, parse_mode="HTML")
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data == "autosync_toggle")
+def autosync_toggle_callback(call):
+    """Toggle auto-sync on/off"""
+    chat_id = call.message.chat.id
+    settings = load_autosync_settings()
+    
+    settings["enabled"] = not settings.get("enabled", False)
+    
+    if save_autosync_settings(settings):
+        status = "bật" if settings["enabled"] else "tắt"
+        bot.answer_callback_query(call.id, f"✅ Đã {status} Auto-Sync!")
+        
+        # If enabling for the first time, set last_sync to now
+        if settings["enabled"] and not settings.get("last_sync"):
+            settings["last_sync"] = datetime.now().isoformat()
+            save_autosync_settings(settings)
+    else:
+        bot.answer_callback_query(call.id, "❌ Lỗi khi cập nhật cài đặt!")
+    
+    # Refresh menu
+    autosync_menu_callback(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "autosync_settime")
+def autosync_settime_callback(call):
+    """Show time interval selection"""
+    chat_id = call.message.chat.id
+    settings = load_autosync_settings()
+    current_interval = settings.get("interval_minutes", 5)
+    
+    msg = (
+        f"⏱️ <b>Đặt khoảng thời gian Auto-Sync</b>\n\n"
+        f"📊 <b>Hiện tại:</b> {current_interval} phút\n\n"
+        f"💡 <i>Chọn khoảng thời gian tự động đồng bộ (tối thiểu 5 phút)</i>"
+    )
+    
+    markup = types.InlineKeyboardMarkup(row_width=3)
+    
+    # Time options
+    time_options = [5, 10, 15, 30, 60, 120, 240, 360, 720, 1440]
+    buttons = []
+    
+    for minutes in time_options:
+        if minutes < 60:
+            label = f"{minutes}m"
+        elif minutes < 1440:
+            label = f"{minutes//60}h"
+        else:
+            label = f"{minutes//1440}d"
+        
+        emoji = "✅ " if minutes == current_interval else ""
+        buttons.append(types.InlineKeyboardButton(
+            f"{emoji}{label}",
+            callback_data=f"autosync_interval_{minutes}"
+        ))
+    
+    # Add buttons in rows of 3
+    for i in range(0, len(buttons), 3):
+        markup.row(*buttons[i:i+3])
+    
+    markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="autosync_menu"))
+    
+    bot.edit_message_text(msg, chat_id, call.message.id, reply_markup=markup, parse_mode="HTML")
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("autosync_interval_"))
+def autosync_interval_callback(call):
+    """Set auto-sync interval"""
+    chat_id = call.message.chat.id
+    
+    try:
+        minutes = int(call.data.replace("autosync_interval_", ""))
+        
+        if minutes < 5:
+            bot.answer_callback_query(call.id, "❌ Thời gian tối thiểu là 5 phút!")
+            return
+        
+        settings = load_autosync_settings()
+        settings["interval_minutes"] = minutes
+        
+        if save_autosync_settings(settings):
+            if minutes < 60:
+                time_text = f"{minutes} phút"
+            elif minutes < 1440:
+                time_text = f"{minutes//60} giờ"
+            else:
+                time_text = f"{minutes//1440} ngày"
+            
+            bot.answer_callback_query(call.id, f"✅ Đã đặt thời gian: {time_text}")
+        else:
+            bot.answer_callback_query(call.id, "❌ Lỗi khi lưu cài đặt!")
+        
+        # Go back to autosync menu
+        autosync_menu_callback(call)
+        
+    except Exception as e:
+        bot.answer_callback_query(call.id, "❌ Lỗi!")
+        print(f"[AUTOSYNC] Error setting interval: {e}")
+
+@bot.callback_query_handler(func=lambda call: call.data == "autosync_resettime")
+def autosync_resettime_callback(call):
+    """Reset auto-sync timer"""
+    chat_id = call.message.chat.id
+    settings = load_autosync_settings()
+    
+    settings["last_sync"] = datetime.now().isoformat()
+    
+    if save_autosync_settings(settings):
+        bot.answer_callback_query(call.id, "✅ Đã reset thời gian! Sync kế tiếp sẽ bắt đầu từ bây giờ.")
+    else:
+        bot.answer_callback_query(call.id, "❌ Lỗi khi reset thời gian!")
+    
+    # Refresh menu
+    autosync_menu_callback(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "autosync_selectdata")
+def autosync_selectdata_callback(call):
+    """Show data type selection for auto-sync"""
+    chat_id = call.message.chat.id
+    settings = load_autosync_settings()
+    sync_types = settings.get("sync_types", {})
+    
+    msg = (
+        f"📦 <b>Chọn loại data Auto-Sync</b>\n\n"
+        f"💡 <i>Chọn những loại data bạn muốn tự động đồng bộ</i>"
+    )
+    
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    
+    # Data type options
+    data_type_info = [
+        ("keys", "🔑 Keys"),
+        ("coupon", "🎟️ Coupon"),
+        ("prices", "💰 Prices"),
+        ("links", "🔗 Links"),
+        ("shortenurl", "📎 Shorten URL"),
+        ("admin", "👥 Admin"),
+        ("users", "👤 Users"),
+    ]
+    
+    for dtype, label in data_type_info:
+        enabled = sync_types.get(dtype, False)
+        emoji = "✅" if enabled else "❌"
+        markup.add(
+            types.InlineKeyboardButton(
+                f"{emoji} {label}",
+                callback_data=f"autosync_toggle_{dtype}"
+            )
+        )
+    
+    # Toggle all buttons
+    markup.row(
+        types.InlineKeyboardButton("✅ Chọn tất cả", callback_data="autosync_selectall"),
+        types.InlineKeyboardButton("❌ Bỏ chọn tất cả", callback_data="autosync_deselectall")
+    )
+    
+    markup.add(types.InlineKeyboardButton("🔙 Quay lại", callback_data="autosync_menu"))
+    
+    bot.edit_message_text(msg, chat_id, call.message.id, reply_markup=markup, parse_mode="HTML")
+    bot.answer_callback_query(call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("autosync_toggle_"))
+def autosync_toggledata_callback(call):
+    """Toggle individual data type for auto-sync"""
+    chat_id = call.message.chat.id
+    dtype = call.data.replace("autosync_toggle_", "")
+    
+    settings = load_autosync_settings()
+    sync_types = settings.get("sync_types", {})
+    
+    sync_types[dtype] = not sync_types.get(dtype, False)
+    settings["sync_types"] = sync_types
+    
+    if save_autosync_settings(settings):
+        status = "bật" if sync_types[dtype] else "tắt"
+        bot.answer_callback_query(call.id, f"✅ Đã {status} {dtype}!")
+    else:
+        bot.answer_callback_query(call.id, "❌ Lỗi!")
+    
+    # Refresh menu
+    autosync_selectdata_callback(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "autosync_selectall")
+def autosync_selectall_callback(call):
+    """Enable all data types for auto-sync"""
+    settings = load_autosync_settings()
+    sync_types = settings.get("sync_types", {})
+    
+    for dtype in sync_types:
+        sync_types[dtype] = True
+    
+    settings["sync_types"] = sync_types
+    
+    if save_autosync_settings(settings):
+        bot.answer_callback_query(call.id, "✅ Đã chọn tất cả!")
+    else:
+        bot.answer_callback_query(call.id, "❌ Lỗi!")
+    
+    # Refresh menu
+    autosync_selectdata_callback(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "autosync_deselectall")
+def autosync_deselectall_callback(call):
+    """Disable all data types for auto-sync"""
+    settings = load_autosync_settings()
+    sync_types = settings.get("sync_types", {})
+    
+    for dtype in sync_types:
+        sync_types[dtype] = False
+    
+    settings["sync_types"] = sync_types
+    
+    if save_autosync_settings(settings):
+        bot.answer_callback_query(call.id, "✅ Đã bỏ chọn tất cả!")
+    else:
+        bot.answer_callback_query(call.id, "❌ Lỗi!")
+    
+    # Refresh menu
+    autosync_selectdata_callback(call)
+
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_syncmenu")
+def back_to_syncmenu_callback(call):
+    """Return to main sync menu"""
+    chat_id = call.message.chat.id
+    
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        types.InlineKeyboardButton("🔑 Keys", callback_data="sync_keys"),
+        types.InlineKeyboardButton("🎟️ Coupon", callback_data="sync_coupon")
+    )
+    markup.add(
+        types.InlineKeyboardButton("💰 Prices", callback_data="sync_prices"),
+        types.InlineKeyboardButton("🔗 Links", callback_data="sync_links")
+    )
+    markup.add(
+        types.InlineKeyboardButton("📎 Shorten URL", callback_data="sync_shortenurl"),
+        types.InlineKeyboardButton("👥 Admin", callback_data="sync_admin")
+    )
+    markup.add(
+        types.InlineKeyboardButton("📦 Tất cả", callback_data="sync_all")
+    )
+    markup.add(
+        types.InlineKeyboardButton("⚡ Auto-Sync", callback_data="autosync_menu")
+    )
+    
+    bot.edit_message_text(
+        "📂 <b>Chọn loại data cần đồng bộ từ GitHub:</b>",
+        chat_id,
+        call.message.id,
+        reply_markup=markup,
+        parse_mode="HTML"
+    )
+    bot.answer_callback_query(call.id)
 
 # =================== ADMIN MANAGEMENT ===================
 
@@ -2988,6 +3445,12 @@ def back_to_start(call):
 def start_bot():
     """Start bot polling in a separate thread"""
     print("[BOT] Starting Telegram bot polling...")
+    
+    # Start auto-sync scheduler in background thread
+    scheduler_thread = threading.Thread(target=autosync_scheduler, daemon=True)
+    scheduler_thread.start()
+    print("[AUTOSYNC] Background scheduler thread started")
+    
     bot.infinity_polling()
 
 if __name__ == "__main__":

@@ -10,7 +10,6 @@ COPY . .
 # Store initial key files and prices for restoration after volume mount
 RUN mkdir -p /app/initial_data && \
     cp /app/data/keys/key*.txt /app/initial_data/ 2>/dev/null || true && \
-    cp /app/data/keys/oders.json /app/initial_data/ 2>/dev/null || true && \
     cp /app/data/keys/keys_solved.json /app/initial_data/ 2>/dev/null || true && \
     cp /app/data/prices/prices.json /app/initial_data/ 2>/dev/null || true && \
     cp /app/data/dashboard/auth.json /app/initial_data/ 2>/dev/null || true && \

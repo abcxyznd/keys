@@ -21,7 +21,6 @@ restore_if_missing "/app/data/links/download.json"
 restore_if_missing "/app/data/prices/prices.json"
 restore_if_missing "/app/data/settings/settings.json"
 restore_if_missing "/app/data/dashboard/user_settings.json"
-restore_if_missing "/app/data/keys/oders.json"
 restore_if_missing "/app/data/keys/keys_solved.json"
 
 # Restore key files
