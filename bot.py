@@ -7,6 +7,7 @@ import time
 from datetime import datetime, timedelta
 from telebot import TeleBot, types
 from telebot.util import extract_arguments
+import webhooklog
 
 # =================== GitHub API Helper ===================
 class GitHubDataManager:
@@ -2439,26 +2440,39 @@ def perform_autosync():
         if not types_to_sync:
             return
         
+        # Track sync results
+        success_count = 0
+        failed_count = 0
+        
         # Sync each enabled type
         for data_type in types_to_sync:
             try:
-                sync_data_by_type(data_type)
-                print(f"[AUTOSYNC] ✅ Synced {data_type}")
+                success, message = sync_data_by_type(data_type)
+                if success:
+                    success_count += 1
+                    print(f"[AUTOSYNC] ✅ Synced {data_type}")
+                else:
+                    failed_count += 1
+                    print(f"[AUTOSYNC] ❌ Failed to sync {data_type}: {message}")
             except Exception as e:
+                failed_count += 1
                 print(f"[AUTOSYNC] ❌ Error syncing {data_type}: {e}")
         
         # Update last sync time
         settings["last_sync"] = datetime.now().isoformat()
         save_autosync_settings(settings)
         
-        # Notify admin if TG_CHAT_ID is set
+        # Send notification to Discord webhook
         try:
-            if TG_CHAT_ID:
-                sync_summary = "\n".join([f"• {dtype}" for dtype in types_to_sync])
-                msg = f"🔄 <b>Auto-Sync hoàn tất</b>\n\n{sync_summary}"
-                bot.send_message(TG_CHAT_ID, msg, parse_mode="HTML")
-        except:
-            pass
+            interval_minutes = settings.get("interval_minutes", 5)
+            webhooklog.log_autosync(
+                sync_types=types_to_sync,
+                success_count=success_count,
+                failed_count=failed_count,
+                interval_minutes=interval_minutes
+            )
+        except Exception as e:
+            print(f"[AUTOSYNC] Error sending webhook notification: {e}")
             
     except Exception as e:
         print(f"[AUTOSYNC] Error in perform_autosync: {e}")

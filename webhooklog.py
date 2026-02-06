@@ -5,11 +5,12 @@ import json
 from datetime import datetime
 import traceback
 
-# Discord Webhook URL
+# Discord Webhook URLs
 DISCORD_WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+WEBHOOK_SYNC_URL = os.getenv("WEBHOOK_SYNC_URL", "https://discord.com/api/webhooks/1440954417330524171/loj9k4Bcmla30-zgNncoilau6NNHpPgyL_KXAgPSyHiRYq4qse8rZeTfDBpHz0S_Ohig")
 
 
-def send_discord_embed(title, description, color, fields=None, footer=None, thumbnail=None):
+def send_discord_embed(title, description, color, fields=None, footer=None, thumbnail=None, webhook_url=None):
     """
     Gửi embed message đến Discord webhook
     
@@ -20,8 +21,12 @@ def send_discord_embed(title, description, color, fields=None, footer=None, thum
         fields: List của dict với 'name', 'value', 'inline' (optional)
         footer: Text footer
         thumbnail: URL ảnh thumbnail
+        webhook_url: Custom webhook URL (default: DISCORD_WEBHOOK_URL)
     """
     try:
+        # Use custom webhook URL or default
+        target_webhook = webhook_url or DISCORD_WEBHOOK_URL
+        
         embed = {
             "title": title,
             "description": description,
@@ -41,7 +46,7 @@ def send_discord_embed(title, description, color, fields=None, footer=None, thum
         }
         
         response = requests.post(
-            DISCORD_WEBHOOK_URL,
+            target_webhook,
             json=payload,
             headers={"Content-Type": "application/json"},
             timeout=10
@@ -273,6 +278,51 @@ def log_coupon_used(coupon_code, uid, discount, period):
             {"name": "Thời gian", "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "inline": False}
         ],
         footer="VIP Key System - Coupon Tracking"
+    )
+
+
+def log_autosync(sync_types, success_count=0, failed_count=0, interval_minutes=5):
+    """Log khi auto-sync được thực hiện"""
+    
+    # Tạo danh sách các loại data đã sync
+    sync_list = "\n".join([f"• {dtype}" for dtype in sync_types])
+    
+    # Xác định màu dựa trên kết quả
+    if failed_count == 0:
+        color = 0x2ecc71  # Green - Success
+        status_emoji = "✅"
+        status_text = "Hoàn tất"
+    elif success_count > 0:
+        color = 0xf39c12  # Orange - Partial success
+        status_emoji = "⚠️"
+        status_text = "Một phần"
+    else:
+        color = 0xe74c3c  # Red - Failed
+        status_emoji = "❌"
+        status_text = "Thất bại"
+    
+    fields = [
+        {"name": "Trạng thái", "value": f"{status_emoji} {status_text}", "inline": True},
+        {"name": "Khoảng thời gian", "value": f"{interval_minutes} phút", "inline": True},
+        {"name": "Thời gian", "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "inline": False}
+    ]
+    
+    if sync_types:
+        fields.append({"name": "Loại data đã sync", "value": sync_list, "inline": False})
+    
+    if success_count > 0 or failed_count > 0:
+        result = f"Thành công: {success_count}"
+        if failed_count > 0:
+            result += f" | Thất bại: {failed_count}"
+        fields.append({"name": "Kết quả", "value": result, "inline": False})
+    
+    return send_discord_embed(
+        title="🔄 Auto-Sync Hoàn Tất",
+        description="Tự động đồng bộ dữ liệu từ GitHub",
+        color=color,
+        fields=fields,
+        footer="VIP Key System - Auto-Sync",
+        webhook_url=WEBHOOK_SYNC_URL
     )
 
 
